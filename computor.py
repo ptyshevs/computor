@@ -100,7 +100,7 @@ def equation_to_string(eq, add_right_side=True):
     return s
 
 def combine_same_orders(eq):
-    left = []
+    combined = []
     left_side = True
     for term in eq:
         if type(term) is str and term == '=':
@@ -108,26 +108,30 @@ def combine_same_orders(eq):
             continue
         if type(term) is Term:
             found = False
-            for left_term in left:
+            for left_term in combined:
                 if left_term.order == term.order:
                     sign = 1 if left_side else -1
                     left_term.coef += sign * term.coef
                     found = True
                     break
             if not found:
-                left.append(term)
-    return sorted(left, key=lambda x: x.order, reverse=True)
+                sign = 1 if left_side else -1
+                term.coef *= sign
+                combined.append(term)
+    
+    non_zero = [term for term in combined if term.coef != 0]
+    return sorted(non_zero, key=lambda x: x.order, reverse=True)
 
 def solve_equation(eq):
     """
     For now, equation is in correct form
     """
     order = eq[0].order
+    if eq[0].coef == 0:
+        return "all real values"
+    print(f"{int(order)}-degree polynomial")
     if order == 0:
-        if eq[0].coef == 0:
-            return "all real values"
-        else:
-            return "no solution"
+        return "no solution"  # a != 0, equation of form a = 0
     elif order == 1:
         if len(eq) == 2:
             solution = -eq[1].coef / eq[0].coef
@@ -174,7 +178,7 @@ if __name__ == '__main__':
     print("correct format:", reformat)
     reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z]+)\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=+])'
     matched_terms = re.findall(reg, reformat)
-    print("Matches:", matched_terms)
+    # print("Matches:", matched_terms)
     eq = []
     for match in matched_terms:
         term = interpret_match(match)
@@ -183,10 +187,10 @@ if __name__ == '__main__':
     print("Before simplification:", ' '.join([str(_) for _ in eq]))
     simplified = simplify_operators(eq)
     print("After simplification:", ' '.join([str(_) for _ in simplified]))
-    left_side = combine_same_orders(simplified)
-    print("Combined sides:", ' '.join([str(_) for _ in left_side]), "= 0")
-    if len(left_side) == 0 or len(left_side) > 3 or left_side[0].order > 2:
-        raise ValueError(f"Polynomials of degree > {len(left_side)} are not supported: {equation_to_string(left_side)}")
-    solution = solve_equation(left_side)
-    print(f"{equation_to_string(left_side)}")
+    combined = combine_same_orders(simplified)
+    print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
+    print(f"Reduced form: {equation_to_string(combined)}")
+    if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
+        raise ValueError(f"Polynomials of degree > {len(combined)} are not supported: {equation_to_string(combined)}")
+    solution = solve_equation(combined)
     print(f"Solution: {solution}")
