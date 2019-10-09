@@ -176,6 +176,23 @@ def check_variables(eq):
         if term.name and name != term.name:
             raise ValueError(f"Equation of several variables detected. {name} != {term.name}")
 
+def check_tokens(tokens, regex):
+    for tk in tokens:
+        res = re.findall(regex, tk)
+        if len(res) == 0:
+            raise ValueError(f"Invalid token {tk}")
+
+def check_operators(eq):
+    term_expected = True
+    for t in eq:
+        if type(t) is Term and term_expected:
+            term_expected = False
+        elif type(t) is str and not term_expected:
+            term_expected = True
+        else:
+            raise ValueError("Invalid equation")
+        
+
 jokes = ["Q: Why was the student afraid of the y-intercept?\nA: She thought she'd be stung by the b.",
         "Q: Who invented algebra?\nA: A Clever X-pert.",
         "Q: What do you call friends who love math?\nA: algebros",
@@ -187,16 +204,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('equation')
     parser.add_argument("--joke", '-j', default=False, action='store_true')
+    parser.add_argument('--verbose', '-v', default=False, action='store_true')
     args = parser.parse_args()
 
     if args.joke:
         print(random.choice(jokes))
         exit(0)
+    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=+])'
+
     inp = args.equation
     print("input:", inp)
-    reformat = ''.join((c.lower() for c in inp.split(" ") if c))
+    tokens = [c.lower() for c in inp.split(" ") if c]
+    check_tokens(tokens, reg)
+    reformat = ''.join(tokens)
     print("correct format:", reformat)
-    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z]+)\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=+])'
     matched_terms = re.findall(reg, reformat)
     # print("Matches:", matched_terms)
     eq = []
@@ -204,15 +225,19 @@ if __name__ == '__main__':
         term = interpret_match(match)
         eq.append(term)
     
-    print("Before simplification:", ' '.join([str(_) for _ in eq]))
+    if args.verbose:
+        print("Before simplification:", ' '.join([str(_) for _ in eq]))
     simplified = simplify_operators(eq)
-    print("After simplification:", ' '.join([str(_) for _ in simplified]))
+    if args.verbose:
+        print("After simplification:", ' '.join([str(_) for _ in simplified]))
     check_variables(simplified)
+    check_operators(simplified)
     combined = combine_same_orders(simplified)
     
-    print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
+    if args.verbose:
+        print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
     print(f"Reduced form: {equation_to_string(combined)}")
     if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
         raise ValueError(f"Polynomials of degree > {len(combined)} are not supported: {equation_to_string(combined)}")
     solution = solve_equation(combined)
-    print(f"Solution: {solution}")
+    print(f"Solution(s): {solution}")
