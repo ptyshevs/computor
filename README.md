@@ -7,3 +7,11 @@
 * Handle different variable names
 * Regex
 * Jokes
+
+Token can be one of the following:
+
+* Rational or Complex Number
+* Function
+* Operators: +-/*^ and assignment sign =
+* Matrix
+* Polynomial expression
