@@ -19,9 +19,12 @@ class Term:
 
 def interpret_match(match):
     n = list(match)
-    if n[3]:
-        return n[3]
-    n[0] = float(n[0])
+    if n[5]:  # Operator
+        return n[5]
+    if not n[0]:
+        return Term(coef=float(n[4]), order=0)
+    n = n[1:]
+    n[0] = float(n[0]) if n[0] else 1
     if not n[1] and n[2]:
         raise ValueError(f"Invalid term: {match[0]}{match[1]}^{match[2]}")
     if not n[2]:
@@ -85,6 +88,12 @@ def simplify_operators(eq):
         i += 1
     return simplified
 
+def equation_to_string(eq, add_right_side=False):
+    s =  ' + '.join((str(_) for _ in eq))
+    if add_right_side:
+        s += ' = 0'
+    return s
+
 def combine_same_orders(eq):
     left = []
     left_side = True
@@ -113,9 +122,9 @@ if __name__ == '__main__':
     print("input:", inp)
     reformat = ''.join((c.lower() for c in inp.split(" ") if c))
     print("correct format:", reformat)
-    reg = r'([0-9]+\.?[0-9]*)\*?([a-zA-Z]*)\^?([0-9]*)|([-=+])'
+    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z]+)\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=+])'
     matched_terms = re.findall(reg, reformat)
-    # print("Matches:", matched_terms)
+    print("Matches:", matched_terms)
     eq = []
     for match in matched_terms:
         term = interpret_match(match)
@@ -126,3 +135,5 @@ if __name__ == '__main__':
     print("After simplification:", ' '.join([str(_) for _ in simplified]))
     left_side = combine_same_orders(simplified)
     print("Combined sides:", ' '.join([str(_) for _ in left_side]), "= 0")
+    if len(left_side) > 3 or left_side[0].order > 2:
+        raise ValueError(f"Polynomials of degree > {len(left_side)} are not supported: {equation_to_string(left_side, True)}")
