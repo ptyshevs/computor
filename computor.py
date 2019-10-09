@@ -3,7 +3,7 @@ import argparse
 import re
 
 class Term:
-    def __init__(self, name='x', order=1, coef=1):
+    def __init__(self, name='', order=1, coef=1):
         self.name = name
         self.order = order
         self.coef = coef
@@ -165,7 +165,15 @@ def solve_equation(eq):
     else:
         raise ValueError(f"Polynomials of degree {order} are not supported")
     
-
+def check_variables(eq):
+    name = None
+    for term in eq:
+        if type(term) is not Term:
+            continue
+        if name is None and term.name:
+            name = term.name
+        if term.name and name != term.name:
+            raise ValueError(f"Equation of several variables detected. {name} != {term.name}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -187,7 +195,9 @@ if __name__ == '__main__':
     print("Before simplification:", ' '.join([str(_) for _ in eq]))
     simplified = simplify_operators(eq)
     print("After simplification:", ' '.join([str(_) for _ in simplified]))
+    check_variables(simplified)
     combined = combine_same_orders(simplified)
+    
     print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
     print(f"Reduced form: {equation_to_string(combined)}")
     if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
