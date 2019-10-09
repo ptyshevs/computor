@@ -1,6 +1,7 @@
 import sys
 import argparse
 import re
+import random
 
 class Term:
     def __init__(self, name='', order=1, coef=1):
@@ -175,11 +176,22 @@ def check_variables(eq):
         if term.name and name != term.name:
             raise ValueError(f"Equation of several variables detected. {name} != {term.name}")
 
+jokes = ["Q: Why was the student afraid of the y-intercept?\nA: She thought she'd be stung by the b.",
+        "Q: Who invented algebra?\nA: A Clever X-pert.",
+        "Q: What do you call friends who love math?\nA: algebros",
+        "Q: Why wont Goldilocks drink a glass of water with 8 pieces of ice in it?\nA: It's too cubed.",
+        "Q: Why is an algebra book always unhappy? A: Because it always has lots of problems.",
+        "Q: Why do you rarely find mathematicians spending time at the beach? A: Because they have sine and cosine to get a tan and don't need the sun!"]
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('equation')
+    parser.add_argument("--joke", '-j', default=False, action='store_true')
     args = parser.parse_args()
 
+    if args.joke:
+        print(random.choice(jokes))
+        exit(0)
     inp = args.equation
     print("input:", inp)
     reformat = ''.join((c.lower() for c in inp.split(" ") if c))
