@@ -210,7 +210,7 @@ if __name__ == '__main__':
     if args.joke:
         print(random.choice(jokes))
         exit(0)
-    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=+])'
+    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=*+])'
 
     inp = args.equation
     print("input:", inp)
