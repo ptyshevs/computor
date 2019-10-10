@@ -8,7 +8,7 @@ def str_to_num(s):
     except ValueError:
         return float(s)
 
-def match_token(token):
+def match_token(token, env):
     """ use re.fullmatch to map token to object """
     number_re = r'[-]?[0-9]+\.?[0-9]*'
     operator_re = r'(\*\*)|([\=\+\-\*\/\^\%\?])'
@@ -31,6 +31,9 @@ def match_token(token):
             return None
         else:
             var = Variable(name)
+            for t in env:
+                if var == t:
+                    return t
             return var
 
 def eval_expression(expr, env):
@@ -41,30 +44,42 @@ def eval_expression(expr, env):
     for i in range(n):
         t = expr[i]
         if type(t) is Variable:
-            if t in env:
-                print(f"Var {t} exists in env")
-                t = t.v
-            elif t.v is None:
+            found = False
+            for v in env:
+                if t == v:
+                    print(f"Var {t} exists in env")
+                    t = v
+                    found = True
+                    break
+            if t.v is None:
                 raise ValueError(f"Variable {t} doesn't have value associated with it")
+            else:
+                t = t.v
         
-        elif type(t) is Operator:
+        print(f't={t}')
+        if type(t) is Operator:
             left = expr[i - 1] if i > 0 else None
             if left is None:
                 left = accum
+            if type(left) is Variable:
+                left = left.v
             right = expr[i + 1] if i < (n - 1) else None
-            
+            if type(right) is Variable:
+                right = right.v
+            print(f"left={left}|right={right}|op={t}")
             if t.n_operands == 2 and (left is None or right is None):
                 raise ValueError(f"Invalid expression: {expr} (Operator doesn't have enough operands)")
             elif t.n_operands == 1 and left is None:
                 raise ValueError(f"Invalid expression: {expr} (Operator doesn't have enough operands)")
             else:
                 accum = t.eval(left, right)
+                expect_operator = False
         else:
             if accum is None:
                 accum = t
                 expect_operator = True
             elif expect_operator:
-                raise ValueError(f'Invalid expression: {expr}. Expected operator, found term instead')
+                raise ValueError(f'Invalid expression: {expr}. Expected operator, found term {t} at {i} place instead')
             else:
                 expect_operator = True
     return accum
@@ -92,15 +107,18 @@ def eval_statement(expr, env):
         return "Right side of assignment cannot be empty"
 
     right_side = eval_expression(right, env)
+    print("Right side:", right_side)
     var = left[0]
     found = False
     for thing in env:
         if thing == var:
             thing.assign(right_side)
             found = True
+            print("Found, assigned to it")
             break
     if not found:
         var.assign(right_side)
+        print("var now:", var)
         env.append(var)
     return right_side
 
@@ -137,8 +155,10 @@ if __name__ == '__main__':
             break
         elif line_args['history']:
             show_history(history)
+            continue
         elif line_args['env']:
             show_env(env)
+            continue
 
         tokens = [c for c in inp.split(" ") if c]
         # print(tokens)
@@ -146,13 +166,19 @@ if __name__ == '__main__':
         
         expr = []
         for tk in tokens:
-            obj = match_token(tk)
+            obj = match_token(tk, env)
             expr.append(obj)
 
         print("Input:", inp, "|Expression:", expr)
         # Expression can either be an assignment statement or expression evaluation
         if '=' in expr:
-            res = eval_statement(expr, env)
-            print(res)
+            try:
+                res = eval_statement(expr, env)
+                print(res)
+            except ValueError as e:
+                print(e)
         else:
-            print(eval_expression(expr, env))
+            try:
+                print(eval_expression(expr, env))
+            except ValueError as e:
+                print(e)
