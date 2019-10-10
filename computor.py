@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 import sys
 import argparse
 import re
@@ -234,7 +235,7 @@ if __name__ == '__main__':
         if args.verbose:
             print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
         print(f"Reduced form: {equation_to_string(combined)}")
-        if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
-            raise ValueError(f"Polynomials of degree > {len(combined)} are not supported: {equation_to_string(combined)}")
+        if combined[0].order > 2:
+            raise ValueError(f"Polynomials of degree > {combined[0].order} are not supported: {equation_to_string(combined)}")
         solution = solve_equation(combined)
         print(f"Solution(s): {solution}")
