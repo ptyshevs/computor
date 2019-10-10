@@ -48,50 +48,34 @@ def apply_sign(operator, term):
     term.coef *= sign
 
 def simplify_operators(eq):
-    i = 0
+
+    i = len(eq) - 1
     simplified = []
-    cnt_equal_sign = 0
-    while True:
+    cnt_equals = 0
+    while i >= 0:
 
-        if i == len(eq):
-            break
-
-        cur_term = eq[i]
-        cur_operator = is_op(cur_term)
-        if type(cur_term) is str and cur_term == '=':
-            cnt_equal_sign += 1
-            if cnt_equal_sign > 1:
-                raise ValueError("More equal signs than necessary")
-        if is_op(cur_term):
-            solved = False
-    
-            left_op = eq[i - 1] if i > 0 else None
-            right_op = eq[i + 1] if i < (len(eq) - 1) else None
-            left_operator = is_op(left_op)
-            right_operator = is_op(right_op)
-
-            if (left_operator and right_operator) or right_op is None:
-                raise ValueError("Parsing error: operators are invalid")
-
-            if cur_operator and (type(left_op) in [None, str]) and type(right_op) is Term:
-                apply_sign(cur_operator, right_op)
-                solved = True
-
-            if is_term(left_op) and is_term(right_op):
-                if cur_term == '-':
-                    apply_sign(cur_term, right_op)
-                    simplified.append("+")
+        cur = eq[i]
+        if cur == '=':
+            cnt_equals += 1
+            if cnt_equals > 1:
+                raise ValueError("Too many equal signs")
+        left = eq[i - 1] if i > 0 else None
+        right = eq[i + 1] if i < len(eq) - 1 else None
+        if is_op(cur):
+            if is_op(left) or left is None:
+                if is_term(right):
+                    apply_sign(cur, right)
+                    eq.pop(i)
                 else:
-                    simplified.append(cur_term)
-                solved = True
-
-            if not solved and cur_operator and left_operator:
-                print(cur_term)
-                raise ValueError("Too many operators")
-
+                    raise ValueError("Invalid equation")
+            else:
+                if cur == '-':
+                    apply_sign(cur, right)
+                    cur = '+'
+                simplified.insert(0, cur)
         else:
-            simplified.append(cur_term)
-        i += 1
+            simplified.insert(0, cur)
+        i -= 1
     return simplified
 
 def equation_to_string(eq, add_right_side=True):
@@ -180,17 +164,28 @@ def check_tokens(tokens, regex):
     for tk in tokens:
         res = re.findall(regex, tk)
         if len(res) == 0:
-            raise ValueError(f"Invalid token {tk}")
+            raise ValueError(f"Invalid token {tk} | {res}")
+        print(res)
+        v = ''.join([''.join(_[0] if _[0] else _[4:]) for _ in res])
+        print(v)
+        if v != tk:
+            raise ValueError(f"Invalid token: {tk} != {v}")
+
 
 def check_operators(eq):
+    left_side = True
     term_expected = True
     for t in eq:
         if type(t) is Term and term_expected:
             term_expected = False
         elif type(t) is str and not term_expected:
             term_expected = True
+        elif type(t) is str and left_side:
+            left_side = False
         else:
             raise ValueError("Invalid equation")
+    if is_op(eq[-1]) or is_op(eq[0]):
+        raise ValueError("Equation should not start and\or end with operator")
         
 
 jokes = ["Q: Why was the student afraid of the y-intercept?\nA: She thought she'd be stung by the b.",
@@ -210,7 +205,7 @@ if __name__ == '__main__':
     if args.joke:
         print(random.choice(jokes))
         exit(0)
-    reg = r'(([0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=*+])'
+    reg = r'(([[0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=*+])'
 
     inp = args.equation
     print("input:", inp)
@@ -219,7 +214,7 @@ if __name__ == '__main__':
     reformat = ''.join(tokens)
     print("correct format:", reformat)
     matched_terms = re.findall(reg, reformat)
-    # print("Matches:", matched_terms)
+    print("Matches:", matched_terms)
     eq = []
     for match in matched_terms:
         term = interpret_match(match)
@@ -233,11 +228,13 @@ if __name__ == '__main__':
     check_variables(simplified)
     check_operators(simplified)
     combined = combine_same_orders(simplified)
-    
-    if args.verbose:
-        print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
-    print(f"Reduced form: {equation_to_string(combined)}")
-    if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
-        raise ValueError(f"Polynomials of degree > {len(combined)} are not supported: {equation_to_string(combined)}")
-    solution = solve_equation(combined)
-    print(f"Solution(s): {solution}")
+    if len(combined) == 0:
+        print(f"Solution(s): all real variables")
+    else:
+        if args.verbose:
+            print("Combined sides:", ' '.join([str(_) for _ in combined]), "= 0")
+        print(f"Reduced form: {equation_to_string(combined)}")
+        if len(combined) == 0 or len(combined) > 3 or combined[0].order > 2:
+            raise ValueError(f"Polynomials of degree > {len(combined)} are not supported: {equation_to_string(combined)}")
+        solution = solve_equation(combined)
+        print(f"Solution(s): {solution}")
