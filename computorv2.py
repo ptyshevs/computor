@@ -31,8 +31,12 @@ def match_token(token, env):
     # 2.2 Complex number
     mo = re.fullmatch(complex_re, token)
     if mo:
-        print(mo, mo.groups(), print(len(mo.groups())))
-        return Complex(Rational(mo[1]), Rational(mo[2]))
+        print(mo, mo.groups())
+        real, img = mo[1], mo[2]
+        if not img:
+            real = 0
+            img = mo[1]
+        return Complex(Rational(real), Rational(img))
     # 3. Variable
     mo = re.fullmatch(var_re, token)
     if mo:
@@ -252,6 +256,15 @@ def evaluate_rpn(rpn, env):
         return res.v
     return res
 
+def expand_tokens(tokens):
+    split_re = r'([*^/()])'
+    exp = []
+    for tk in tokens:
+        expanded = re.split(split_re, tk)
+        exp.extend([c for c in expanded if c])
+        # print("SPLITTTED:", )
+        # exp.append(tk)
+    return exp
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -276,12 +289,13 @@ if __name__ == '__main__':
             continue
 
         tokens = [c for c in inp.split(" ") if c]
-        # print(tokens)
+        print("Tokens:", tokens)
         # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
-        
+        exp_tokens = expand_tokens(tokens)
+        print("Expanded tokens:", exp_tokens)
         success = True
         expr = []
-        for tk in tokens:
+        for tk in exp_tokens:
             obj = match_token(tk, env)
             if obj is None:
                 print(f"Unrecognized token: {tk}")
