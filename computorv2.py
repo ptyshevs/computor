@@ -277,12 +277,14 @@ def expand_tokens(tokens):
                 accum += t
             if t in list('+-'):
                 prev = expanded[i-1] if i > 0 else None
-                if prev and prev in '0123456789)':
+                if prev and prev in '0123456789()':
                     exp.append(accum)
                     accum = None
                 else:
-                    exp.append(accum)
-                    accum = None
+                    next = expanded[i+1] if i < n -1 else None
+                    if next and next in '0123456789':
+                        exp.append(accum)
+                        accum = None
             else:
                 exp.append(accum)
                 accum = None

@@ -48,3 +48,6 @@ def test_unary2():
 
 def test_unary3():
     assert str(evaluate('+1')) == '1'
+
+def test_unary4():
+    assert str(evaluate('+3')) == '3'
