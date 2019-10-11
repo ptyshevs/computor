@@ -1,4 +1,5 @@
 from computor_types import *
+from computorv2 import evaluate
 
 def test_init1():
     assert str(Rational(3)) == '3'
@@ -38,3 +39,12 @@ def test_op2():
 
 def test_op3():
     assert str(evaluate('3^(1+1+1)')) == '27'
+
+def test_unary1():
+    assert str(evaluate('-3')) == '-3'
+
+def test_unary2():
+    assert str(evaluate('-0.25')) == '-1/4'
+
+def test_unary3():
+    assert str(evaluate('+1')) == '1'

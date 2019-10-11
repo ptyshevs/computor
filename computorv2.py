@@ -279,7 +279,7 @@ def expand_tokens(tokens):
                 accum += t
             if t in list('+-'):
                 prev = expanded[i-1] if i > 0 else None
-                if prev and prev in '0123456789':
+                if prev and prev in '0123456789)':
                     exp.append(accum)
                     accum = None
             else:
@@ -288,6 +288,47 @@ def expand_tokens(tokens):
         if accum is not None:
             exp.append(accum)
     return exp
+
+def tokens_to_expr(tokens, env):
+    expr = []
+    for tk in tokens:
+        obj = match_token(tk, env)
+        if obj is None:
+            print(f"Unrecognized token: {tk}")
+            expr = []
+            break
+        expr.append(obj)
+    return expr
+
+def evaluate(inp, env=None):
+    """ 
+    Evaluation pipeline
+    """
+    if env is None:
+        env = []
+    result = None
+    tokens = [c for c in inp.split(" ") if c]
+    print("Tokens:", tokens)
+    # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
+    exp_tokens = expand_tokens(tokens)
+    print("Expanded tokens:", exp_tokens)
+
+    expr = tokens_to_expr(exp_tokens, env)
+
+    if not expr:
+        return None
+
+    print("Expression:", expr)
+    # At this point all tokens are interpreted and expanded, so we can
+    # proceed with preparing it into form that is suitable for calculation
+    rpn = infix_to_rpn(expr)
+    print("RPN:", rpn)
+    try:
+        result = evaluate_rpn(rpn, env)
+        print("Result:", result)
+    except ValueError as e:
+        print(e)
+    return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -311,30 +352,8 @@ if __name__ == '__main__':
             show_env(env)
             continue
 
-        tokens = [c for c in inp.split(" ") if c]
-        print("Tokens:", tokens)
-        # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
-        exp_tokens = expand_tokens(tokens)
-        print("Expanded tokens:", exp_tokens)
-        success = True
-        expr = []
-        for tk in exp_tokens:
-            obj = match_token(tk, env)
-            if obj is None:
-                print(f"Unrecognized token: {tk}")
-                success = False
-                break
-            expr.append(obj)
-        if not success:
-            continue
-
-        print("Input:", inp, "|Expression:", expr)
-        # At this point all tokens are interpreted and expanded, so we can
-        # proceed with preparing it into form that is suitable for calculation
-        rpn = infix_to_rpn(expr)
-        print("RPN:", rpn)
         try:
-            result = evaluate_rpn(rpn, env)
-            print("Result:", result)
+            result = evaluate(inp, env)
+            print(result)
         except ValueError as e:
             print(e)
