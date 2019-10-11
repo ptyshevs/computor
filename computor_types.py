@@ -17,7 +17,9 @@ class Complex(Term):
         if self.img != 0:
             if s:
                 s += '+' if self.img >= Rational(0) else '-'
-            s += f'{abs(self.img)}i'
+                s += f'{abs(self.img)}i'
+            else:
+                s += f'{self.img}i'
         return s
     
     def __add__(self, o):
@@ -103,6 +105,8 @@ class Rational(Term):
                 return Rational(left_p + right_p, common_q)
             else:
                 return Rational(self.p + o.p, self.q)
+        elif type(o) is Complex:
+            return Complex(self) + o
         else:
             raise NotImplementedError(f"Rational + {o} ({type(o)})")
 
@@ -121,9 +125,12 @@ class Rational(Term):
             raise NotImplementedError()
     
     def __mul__(self, o):
-        if type(o) is not Rational:
+        if type(o) is Rational:
+            return Rational(self.p * o.p, self.q * o.q)
+        elif type(o) is Complex:
+            return Complex(self) * o
+        else:
             raise NotImplementedError()
-        return Rational(self.p * o.p, self.q * o.q)
 
     def __div__(self, o):
         if type(o) is not Rational:
