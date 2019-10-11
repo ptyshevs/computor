@@ -14,6 +14,7 @@ def match_token(token, env):
     operator_re = r'(\*\*)|([\=\+\-\*\/\^\%\?])'
     brackets_re = r'[\(\)]'
     complex_re = r'([\-\+]?[0-9]*)([\+\-]?[0-9]*)i'
+    matrix_re = r'\[.*\]'
     var_re = r'[a-zA-Z]+'
     # 1. Operator
     mo = re.fullmatch(operator_re, token)
@@ -50,6 +51,11 @@ def match_token(token, env):
                 if var == t:
                     return t
             return var
+    # 4. Matrix
+    mo = re.fullmatch(matrix_re, token)
+    if mo:
+
+        print("MATRIX", mo, mo.groups())
 
 def eval_expression(expr, env):
     """ Expression is expected to simplify to a single term """
