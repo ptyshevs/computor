@@ -23,13 +23,17 @@ class Function(Term):
         self.f = f
 
 class Operator(Term):
+    available_operators = list('+-*/%^?') + ["**"]
+    precedence_map = {'+': 2, '-': 2, '%': 2, '*': 3, '/': 3, '**': 3, '^': 4, '?': 4}
+
     def __init__(self, op):
         self.op = op
-        self.available_operators = '+-*/%^?'.split() + ["**"]
         if op not in self.available_operators:
             raise ValueError(f"Bad operator: {op}")
-        self.n_operands = 1 if op in '?~' else 2
-    
+        self.n_operands = 1 if op in list('?~') else 2
+
+        self.precedence = self.precedence_map[op]
+
     def __repr__(self):
         return self.op
     
@@ -37,7 +41,7 @@ class Operator(Term):
         return str(self) == str(o)
     
     def eval(self, l, r=None):
-        if self.n_operands == 2 and r is not None:
+        if self.n_operands == 1 and r is not None:
             raise ValueError("{self} doesn't support second operator")
         if self.op == '+':
             return l + r

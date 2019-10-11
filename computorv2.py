@@ -56,7 +56,6 @@ def eval_expression(expr, env):
             else:
                 t = t.v
         
-        print(f't={t}')
         if type(t) is Operator:
             if accum is None:
                 left = expr[i - 1] if i > 0 else None
