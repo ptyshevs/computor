@@ -10,10 +10,10 @@ def str_to_num(s):
 
 def match_token(token, env):
     """ use re.fullmatch to map token to object """
-    number_re = r'[-]?[0-9]+\.?[0-9]*'
+    number_re = r'[\-\+]?[0-9]+\.?[0-9]*'
     operator_re = r'(\*\*)|([\=\+\-\*\/\^\%\?])'
     brackets_re = r'[\(\)]'
-    complex_re = r'(\-?[0-9]*)([\+\-]?[0-9]*)i'
+    complex_re = r'([\-\+]?[0-9]*)([\+\-]?[0-9]*)i'
     var_re = r'[a-zA-Z]+'
     # 1. Operator
     mo = re.fullmatch(operator_re, token)
@@ -265,10 +265,23 @@ def expand_tokens(tokens):
     split_re = r'([\*\^\/\(\)\-\+\%\=\?])'
     exp = []
     for tk in tokens:
-        expanded = re.split(split_re, tk)
-        exp.extend([c for c in expanded if c])
-        # print("SPLITTTED:", )
-        # exp.append(tk)
+        expanded = [c for c in re.split(split_re, tk) if c]
+        n = len(expanded)
+        accum = None
+        for i in range(n):
+            t = expanded[i]
+            if accum is None:
+                accum = t
+            else:
+                accum += t
+            if t in list('+-'):
+                prev = expanded[i-1] if i > 0 else None
+                if prev and prev in '0123456789':
+                    exp.append(accum)
+                    accum = None
+            else:
+                exp.append(accum)
+                accum = None
     return exp
 
 if __name__ == '__main__':
