@@ -190,11 +190,14 @@ def evaluate_rpn(rpn, env):
     while rpn:
         val = rpn.pop(0)
         if type(val) is Variable:
+            found = False
             for t in env:
                 if val == t:
-                    val = t.v
+                    val = t
+                    found = True
                     break
-        
+            if not found and val.v is not None:
+                env.append(val)
         if type(val) in [Rational, Complex, Variable]:
             eval_stack.append(val)
         elif type(val) is Operator:
@@ -206,6 +209,21 @@ def evaluate_rpn(rpn, env):
                 if not eval_stack:
                     raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
                 op2 = eval_stack.pop()
+                print(f"OP={op}|OP2={op2}")
+                if val != '=':
+                    if type(op) is Variable:
+                        if op.v is None:
+                            raise ValueError(f"Unassigned variable {op}")
+                        op = op.v
+                    if type(op2) is Variable:
+                        if op2.v is None:
+                            raise ValueError(f"Unassigned variable {op2}")
+                        op2 = op2.v
+                else:
+                    if type(op) is Variable:
+                        op = op.v
+                    if op2 not in env:
+                        env.append(op2)
                 eval_stack.append(val.eval(op, op2))
             else:
                 eval_stack.append(val.eval(op))
@@ -257,8 +275,11 @@ if __name__ == '__main__':
         # proceed with preparing it into form that is suitable for calculation
         rpn = infix_to_rpn(expr)
         print("RPN:", rpn)
-        result = evaluate_rpn(rpn, env)
-        print("Result:", result)
+        try:
+            result = evaluate_rpn(rpn, env)
+            print("Result:", result)
+        except ValueError as e:
+            print(e)
         # if '=' in expr:
         #     try:
         #         res = eval_statement(expr, env)

@@ -19,3 +19,8 @@ class Variable(Term):
             return str(self.name) == str(o.name)
         else:
             return str(self) == str(o)
+
+    def __add__(self, o):
+        if self.v is None:
+            raise ValueError("Unassigned variable addition")
+        return self.v + o

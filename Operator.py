@@ -14,6 +14,7 @@ class Operator(Term):
         self.n_operands = 1 if op in list('?~') else 2
 
         self.precedence = self.precedence_map[op]
+        self.associativity = self.assoc_map[op]
 
     def __repr__(self):
         return self.op
@@ -46,10 +47,11 @@ class Operator(Term):
         elif self.op == '~':  # TODO: Maybe implement this one
             return -l
         elif self.op == '=':
-            if type(l) is Variable:
-                l.v = r
+            print(l, r)
+            if type(r) is Variable:
+                r.v = l
             else:
                 raise NotImplementedError()
-            return l
+            return r
         else:
             raise NotImplementedError()
