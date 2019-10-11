@@ -179,11 +179,6 @@ def infix_to_rpn(expr):
                     output.append(operators.pop())
                 else:
                     break
-            # head = output[-1] if output else None
-            # if head == tk:
-            #     output.append(tk)
-            # else:
-            #     operators.append(tk)
             operators.append(tk)
         elif tk == '(':
             operators.append(tk)

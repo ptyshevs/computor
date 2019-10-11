@@ -45,7 +45,7 @@ class Operator(Term):
         elif self.op == '%':
             return r % l
         elif self.op == '^':
-            return l ** r
+            return r ** l
         elif self.op == '**':
             return l @ r
         elif self.op == '?':

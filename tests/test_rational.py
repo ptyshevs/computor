@@ -29,3 +29,12 @@ def test_init9():
 
 def test_init10():
     assert str(Rational(0, 25)) == '0'
+
+def test_op1():
+    assert str(evaluate('4^-1')) == '1/4'
+
+def test_op2():
+    assert str(evaluate('16^2')) == '256'
+
+def test_op3():
+    assert str(evaluate('3^(1+1+1)')) == '27'
