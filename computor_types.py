@@ -59,11 +59,19 @@ class Rational(Term):
         if p == 0:
             q = 1
         try:
-            p = int(str(p))
-            q = int(str(q))
+            if type(p) is float:
+                p = int(p)
+            elif type(p) is not int:
+                p = int(str(p))
+            
+            if type(q) is float:
+                q = int(q)
+            elif type(q) is not int:
+                q = int(str(q))
         except ValueError:
             if q != 1:
                 raise ValueError(f'Failed to create Rational: p is float and q is not 1: {p}/{q}')
+            print("HERE, type:", type(p))
             ps = str(p)
             dot = ps.index('.')
             order = len(ps) - 1 - dot

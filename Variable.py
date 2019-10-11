@@ -2,7 +2,7 @@ from Term import Term
 
 class Variable(Term):
     def __init__(self, name, v=None):
-        self.name = name
+        self.name = name.lower()
         self.v = v
     
     def assign(self, v):
@@ -24,3 +24,8 @@ class Variable(Term):
         if self.v is None:
             raise ValueError("Unassigned variable addition")
         return self.v + o
+    
+    def dereference(self):
+        if self.v is None:
+            raise ValueError(f"Attempted to dereference Variable {self}")
+        return self.v

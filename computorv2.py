@@ -229,6 +229,8 @@ def evaluate_rpn(rpn, env):
                 if not eval_stack:
                     if val in ['+', '-']:
                         print(f"Unary {val}")
+                        if type(op) is Variable:
+                            op = op.dereference()
                         eval_stack.append(val.eval(op))
                     else:
                         raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
@@ -237,16 +239,12 @@ def evaluate_rpn(rpn, env):
                     print(f"OP={op}|OP2={op2}")
                     if val != '=':
                         if type(op) is Variable:
-                            if op.v is None:
-                                raise ValueError(f"Unassigned variable {op}")
-                            op = op.v
+                            op = op.dereference()
                         if type(op2) is Variable:
-                            if op2.v is None:
-                                raise ValueError(f"Unassigned variable {op2}")
-                            op2 = op2.v
+                            op2 = op2.dereference()
                     else:
                         if type(op) is Variable:
-                            op = op.v
+                            op = op.dereference()
                         if op2 not in env:
                             env.append(op2)
                     eval_stack.append(val.eval(op, op2))
@@ -280,6 +278,9 @@ def expand_tokens(tokens):
             if t in list('+-'):
                 prev = expanded[i-1] if i > 0 else None
                 if prev and prev in '0123456789)':
+                    exp.append(accum)
+                    accum = None
+                else:
                     exp.append(accum)
                     accum = None
             else:
@@ -355,5 +356,5 @@ if __name__ == '__main__':
         try:
             result = evaluate(inp, env)
             print(result)
-        except ValueError as e:
+        except Exception as e:
             print(e)
