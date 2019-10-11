@@ -29,9 +29,15 @@ class Operator(Term):
         if self.n_operands == 1 and r is not None:
             raise ValueError("{self} doesn't support second operator")
         if self.op == '+':
-            return l + r
+            if not r:
+                return +l
+            else:
+                return l + r
         elif self.op == '-':
-            return r - l
+            if not r:
+                return -l
+            else:
+                return r - l
         elif self.op == '*':
             return l * r
         elif self.op == '/':

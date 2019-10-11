@@ -220,28 +220,33 @@ def evaluate_rpn(rpn, env):
             if not eval_stack:
                 raise ValueError(f"Not enough operands to perform calculation | operator {val}")
             op = eval_stack.pop()
-            if n_op == 2:
-                if not eval_stack:
-                    raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
-                op2 = eval_stack.pop()
-                print(f"OP={op}|OP2={op2}")
-                if val != '=':
-                    if type(op) is Variable:
-                        if op.v is None:
-                            raise ValueError(f"Unassigned variable {op}")
-                        op = op.v
-                    if type(op2) is Variable:
-                        if op2.v is None:
-                            raise ValueError(f"Unassigned variable {op2}")
-                        op2 = op2.v
-                else:
-                    if type(op) is Variable:
-                        op = op.v
-                    if op2 not in env:
-                        env.append(op2)
-                eval_stack.append(val.eval(op, op2))
-            else:
+            if n_op == 1:
                 eval_stack.append(val.eval(op))
+            else:
+                if not eval_stack:
+                    if val in ['+', '-']:
+                        print(f"Unary {val}")
+                        eval_stack.append(val.eval(op))
+                    else:
+                        raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
+                else:
+                    op2 = eval_stack.pop()
+                    print(f"OP={op}|OP2={op2}")
+                    if val != '=':
+                        if type(op) is Variable:
+                            if op.v is None:
+                                raise ValueError(f"Unassigned variable {op}")
+                            op = op.v
+                        if type(op2) is Variable:
+                            if op2.v is None:
+                                raise ValueError(f"Unassigned variable {op2}")
+                            op2 = op2.v
+                    else:
+                        if type(op) is Variable:
+                            op = op.v
+                        if op2 not in env:
+                            env.append(op2)
+                    eval_stack.append(val.eval(op, op2))
         elif type(val) is Function:
             if not eval_stack:
                 raise ValueError(f"Not enough operands to perform calculation | operator {val}")
@@ -257,7 +262,7 @@ def evaluate_rpn(rpn, env):
     return res
 
 def expand_tokens(tokens):
-    split_re = r'([*^/()])'
+    split_re = r'([\*\^\/\(\)\-\+\%\=\?])'
     exp = []
     for tk in tokens:
         expanded = re.split(split_re, tk)
