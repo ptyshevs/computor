@@ -92,3 +92,11 @@ class Rational(Term):
         if type(o) is not Rational:
             raise NotImplementedError()
         return Rational(self.v % o.v)
+    
+    def __ge__(self, o):
+        if type(o) is not Rational:
+            raise NotImplementedError()
+        return self.v >= o.v
+
+    def __abs__(self):
+        return Rational(abs(self.p), abs(self.q))

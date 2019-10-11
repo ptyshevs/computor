@@ -12,7 +12,8 @@ class Complex(Term):
     def __repr__(self):
         s = str(self.re)
         if self.img != 0:
-            s += f'+{self.img}i'
+            s += '+' if self.img >= Rational(0) else '-'
+            s += f'{abs(self.img)}i'
         return s
 
 class Matrix(Term):

@@ -12,16 +12,27 @@ def match_token(token, env):
     """ use re.fullmatch to map token to object """
     number_re = r'[-]?[0-9]+\.?[0-9]*'
     operator_re = r'(\*\*)|([\=\+\-\*\/\^\%\?])'
+    brackets_re = r'[\(\)]'
+    complex_re = r'(\-?[0-9]*)([\+\-]?[0-9]*)i'
     var_re = r'[a-zA-Z]+'
     # 1. Operator
     mo = re.fullmatch(operator_re, token)
     if mo:
         return Operator(mo[0])
+    # 1.2 Brackets
+    mo = re.fullmatch(brackets_re, token)
+    if mo:
+        return mo[0]
     # 2. Rational number
     mo = re.fullmatch(number_re, token)
     if mo:
         number = str_to_num(mo[0])
         return Rational(number)
+    # 2.2 Complex number
+    mo = re.fullmatch(complex_re, token)
+    if mo:
+        print(mo, mo.groups(), print(len(mo.groups())))
+        return Complex(Rational(mo[1]), Rational(mo[2]))
     # 3. Variable
     mo = re.fullmatch(var_re, token)
     if mo:
@@ -236,7 +247,10 @@ def evaluate_rpn(rpn, env):
     if len(eval_stack) != 1:
         raise ValueError("Expression doesn't evaluate to a single value")
     print("EVAL STACK:", eval_stack)
-    return eval_stack[0]
+    res = eval_stack[0]
+    if type(res) is Variable:
+        return res.v
+    return res
 
 
 if __name__ == '__main__':
@@ -265,10 +279,17 @@ if __name__ == '__main__':
         # print(tokens)
         # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
         
+        success = True
         expr = []
         for tk in tokens:
             obj = match_token(tk, env)
+            if obj is None:
+                print(f"Unrecognized token: {tk}")
+                success = False
+                break
             expr.append(obj)
+        if not success:
+            continue
 
         print("Input:", inp, "|Expression:", expr)
         # At this point all tokens are interpreted and expanded, so we can
@@ -280,14 +301,3 @@ if __name__ == '__main__':
             print("Result:", result)
         except ValueError as e:
             print(e)
-        # if '=' in expr:
-        #     try:
-        #         res = eval_statement(expr, env)
-        #         print(res)
-        #     except ValueError as e:
-        #         print(e)
-        # else:
-        #     try:
-        #         print(eval_expression(expr, env))
-        #     except ValueError as e:
-        #         print(e)
