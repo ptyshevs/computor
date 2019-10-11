@@ -17,3 +17,15 @@ def test_init5():
 
 def test_init6():
     assert str(Rational(6, 12)) == '1/2'
+
+def test_init7():
+    assert str(Rational(12, 6)) == '2'
+
+def test_init8():
+    assert str(Rational(12, 12)) == '1'
+
+def test_init9():
+    assert str(Rational(3.25)) == '13/4'
+
+def test_init10():
+    assert str(Rational(0, 25)) == '0'

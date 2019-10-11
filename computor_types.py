@@ -16,39 +16,31 @@ class Rational(Term):
         except ValueError:
             if q != 1:
                 raise ValueError(f'Failed to create Rational: p is float and q is not 1: {p}/{q}')
-            print("HERERERE")
             ps = str(p)
             dot = ps.index('.')
-            order = dot + len(ps) - 1 - dot
-            print("Order:", order)
+            order = len(ps) - 1 - dot
             p = int(ps[:dot] + ps[dot + 1:])
             q = 10 ** order
 
         self.p, self.q = self._simplify(p, q)
 
-        self.v = p / q
-    
+        self.v = p / float(q)
+
+    @classmethod
+    def gcd(cls, a, b):
+        a = abs(a)
+        b = abs(b)
+        while b != 0:
+            t = b
+            b = a % b
+            a = t
+        return a
+
     @classmethod
     def _simplify(cls, p, q):
-        # Doesn't work
-        find_divisors = lambda x: [c for c in range(2, int(abs(x) ** .5 + 1)) if x % c == 0] + [x]
-        p_divisors = find_divisors(p)
-        q_divisors = find_divisors(q)
-        if p_divisors == q_divisors:
-            common_divisors = [p_divisors[-1]]
-        else:
-            common_divisors = []
-            for pd in p_divisors:
-                if pd in q_divisors:
-                    common_divisors.append(pd)
-        accum = 1
-        for _ in common_divisors:
-            accum *= _
-        print(f"p_divisors={p_divisors}")
-        print(f'q_divisors={q_divisors}')
-        print(f'common={common_divisors}')
-
-        return int(p / accum), int(q / accum)
+        g = cls.gcd(p, q)
+        
+        return int(p / g), int(q / g)
 
     def __repr__(self):
         if self.q != 1:
