@@ -53,7 +53,7 @@ class Operator(Term):
         elif self.op == '~':  # TODO: Maybe implement this one
             return -l
         elif self.op == '=':
-            print(l, r)
+            print("Assignment:", l, r)
             if type(r) is Variable:
                 r.v = l
             else:

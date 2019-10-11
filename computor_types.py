@@ -59,10 +59,14 @@ class Rational(Term):
         if p == 0:
             q = 1
         try:
+            strp = str(p)
             if type(p) is float:
-                p = int(p)
+                if 'e' in strp and '.' not in strp:  # Very big integer
+                    p = int(p)
+                else:
+                    p = int(strp)
             elif type(p) is not int:
-                p = int(str(p))
+                p = int(strp)
             
             if type(q) is float:
                 q = int(q)
