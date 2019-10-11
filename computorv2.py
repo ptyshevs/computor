@@ -197,7 +197,10 @@ def infix_to_rpn(expr):
             assert operators[-1] == '('
             operators.pop()
     while operators:
-        output.append(operators.pop())
+        op = operators.pop()
+        if op in ['(', ')']:
+            raise ValueError("Mismatched parentheses")
+        output.append(op)
     return output
 
 def evaluate_rpn(rpn, env):
@@ -282,6 +285,8 @@ def expand_tokens(tokens):
             else:
                 exp.append(accum)
                 accum = None
+        if accum is not None:
+            exp.append(accum)
     return exp
 
 if __name__ == '__main__':
