@@ -145,7 +145,7 @@ def infix_to_rpn(expr):
     output = []  # Queue
     while expr:
         tk = expr.pop(0)
-        if type(tk) is Rational:  # TODO: Add complex and matrix here
+        if type(tk) in [Rational, Complex, Variable]:  # TODO: Add complex and matrix here
             output.append(tk)
         elif type(tk) is Function:
             operators.append(tk)
@@ -185,11 +185,17 @@ def infix_to_rpn(expr):
         output.append(operators.pop())
     return output
 
-def evaluate_rpn(rpn):
+def evaluate_rpn(rpn, env):
     eval_stack = []
     while rpn:
         val = rpn.pop(0)
-        if type(val) is Rational:
+        if type(val) is Variable:
+            for t in env:
+                if val == t:
+                    val = t.v
+                    break
+        
+        if type(val) in [Rational, Complex, Variable]:
             eval_stack.append(val)
         elif type(val) is Operator:
             n_op = val.n_operands
@@ -208,9 +214,10 @@ def evaluate_rpn(rpn):
                 raise ValueError(f"Not enough operands to perform calculation | operator {val}")
             eval_stack.append(val.eval(eval_stack.pop()))
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(val, type(val))
     if len(eval_stack) != 1:
         raise ValueError("Expression doesn't evaluate to a single value")
+    print("EVAL STACK:", eval_stack)
     return eval_stack[0]
 
 
@@ -250,7 +257,7 @@ if __name__ == '__main__':
         # proceed with preparing it into form that is suitable for calculation
         rpn = infix_to_rpn(expr)
         print("RPN:", rpn)
-        result = evaluate_rpn(rpn)
+        result = evaluate_rpn(rpn, env)
         print("Result:", result)
         # if '=' in expr:
         #     try:

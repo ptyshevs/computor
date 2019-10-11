@@ -1,4 +1,5 @@
 from Term import Term
+from Variable import Variable
 
 class Operator(Term):
     available_operators = list('+-*/%^?=') + ["**"]
@@ -44,3 +45,11 @@ class Operator(Term):
             return l
         elif self.op == '~':  # TODO: Maybe implement this one
             return -l
+        elif self.op == '=':
+            if type(l) is Variable:
+                l.v = r
+            else:
+                raise NotImplementedError()
+            return l
+        else:
+            raise NotImplementedError()

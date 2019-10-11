@@ -2,6 +2,7 @@ import sys
 from Term import *
 from Rational import *
 from Operator import *
+from Variable import *
 
 class Complex(Term):
     def __init__(self, re, img=0):
@@ -22,26 +23,6 @@ class Function(Term):
     def __init__(self, f):
         self.f = f
 
-
-class Variable(Term):
-    def __init__(self, name, v=None):
-        self.name = name
-        self.v = v
-    
-    def assign(self, v):
-        self.v = v
-    
-    def __repr__(self):
-        s = str(self.name)
-        if self.v:
-            s += f'={self.v}'
-        return s
-    
-    def __eq__(self, o):
-        if type(o) is Variable:
-            return str(self.name) == str(o.name)
-        else:
-            return str(self) == str(o)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
