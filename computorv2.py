@@ -140,6 +140,80 @@ def show_history(history):
 def show_env(env):
     print(env)  # Todo: Pretty formatting
 
+def infix_to_rpn(expr):
+    operators = []  # Stack
+    output = []  # Queue
+    while expr:
+        tk = expr.pop(0)
+        if type(tk) is Rational:  # TODO: Add complex and matrix here
+            output.append(tk)
+        elif type(tk) is Function:
+            operators.append(tk)
+        elif type(tk) is Operator:
+            while True:
+                if len(operators) == 0:
+                    break
+                head = operators[-1]
+                if head == '(':
+                    break
+                if type(head) is Function:
+                    output.append(operators.pop())
+                elif type(head) is Operator and head.precedence > tk.precedence:
+                    output.append(operators.pop())
+                elif type(head) is Operator and head.precedence == tk.precedence and head.associativity == 'left':
+                    output.append(operators.pop())
+                else:
+                    break
+            operators.append(tk)
+        elif tk == '(':
+            operators.append(tk)
+        elif tk == ')':
+            found_bracket = False
+            while True:
+                if len(operators) == 0:
+                    break
+                head = operators[-1]
+                if head == '(':
+                    found_bracket = True
+                    break
+                output.append(operators.pop())
+            if not found_bracket:
+                raise ValueError("Mismatched parentheses")
+            assert operators[-1] == '('
+            operators.pop()
+    while operators:
+        output.append(operators.pop())
+    return output
+
+def evaluate_rpn(rpn):
+    eval_stack = []
+    while rpn:
+        val = rpn.pop(0)
+        if type(val) is Rational:
+            eval_stack.append(val)
+        elif type(val) is Operator:
+            n_op = val.n_operands
+            if not eval_stack:
+                raise ValueError(f"Not enough operands to perform calculation | operator {val}")
+            op = eval_stack.pop()
+            if n_op == 2:
+                if not eval_stack:
+                    raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
+                op2 = eval_stack.pop()
+                eval_stack.append(val.eval(op, op2))
+            else:
+                eval_stack.append(val.eval(op))
+        elif type(val) is Function:
+            if not eval_stack:
+                raise ValueError(f"Not enough operands to perform calculation | operator {val}")
+            eval_stack.append(val.eval(eval_stack.pop()))
+        else:
+            raise NotImplementedError()
+    if len(eval_stack) != 1:
+        raise ValueError("Expression doesn't evaluate to a single value")
+    return eval_stack[0]
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--quiet', '-q', help="Quite mode: display output only when asked for", default=False, action='store_true')
@@ -172,15 +246,20 @@ if __name__ == '__main__':
             expr.append(obj)
 
         print("Input:", inp, "|Expression:", expr)
-        # Expression can either be an assignment statement or expression evaluation
-        if '=' in expr:
-            try:
-                res = eval_statement(expr, env)
-                print(res)
-            except ValueError as e:
-                print(e)
-        else:
-            try:
-                print(eval_expression(expr, env))
-            except ValueError as e:
-                print(e)
+        # At this point all tokens are interpreted and expanded, so we can
+        # proceed with preparing it into form that is suitable for calculation
+        rpn = infix_to_rpn(expr)
+        print("RPN:", rpn)
+        result = evaluate_rpn(rpn)
+        print("Result:", result)
+        # if '=' in expr:
+        #     try:
+        #         res = eval_statement(expr, env)
+        #         print(res)
+        #     except ValueError as e:
+        #         print(e)
+        # else:
+        #     try:
+        #         print(eval_expression(expr, env))
+        #     except ValueError as e:
+        #         print(e)
