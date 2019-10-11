@@ -51,3 +51,7 @@ def test_unary3():
 
 def test_unary4():
     assert str(evaluate('+3')) == '3'
+
+def test_pow1():
+    assert str(evaluate('2^-3')) == '1/8'
+    assert str(evaluate('2^(-3)')) == '1/8'

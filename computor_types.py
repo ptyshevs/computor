@@ -184,7 +184,8 @@ class Matrix(Term):
         self.v = [[c for c in r] for r in A]
 
 class Function(Term):
-    def __init__(self, f):
+    def __init__(self, name, f):
+        self.name = name
         self.f = f
 
 

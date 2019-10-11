@@ -276,19 +276,23 @@ def expand_tokens(tokens):
             else:
                 accum += t
             if t in list('+-'):
-                print("Checking if +- is unary")
+                unary = True
+                # print("Checking if +- is unary")
                 prev = expanded[i-1] if i > 0 else None
-                print("prev is", prev)
+                if prev and len(prev) > 1:
+                    prev = prev[-1]
                 if prev and prev in '0123456789)':
+                    unary = False
+                else:
+                    next = expanded[i+1] if i < (n-1) else None
+                    if next and len(next) > 1:
+                        next = next[0]
+                    if next and next not in '0123456789':
+                        unary = False
+
+                if not unary:
                     exp.append(accum)
                     accum = None
-                else:
-                    next = expanded[i+1] if i < n -1 else None
-                    print("next is", next)
-                    if next and next not in '0123456789':
-                        print("Adding accum:", accum)
-                        exp.append(accum)
-                        accum = None
             else:
                 exp.append(accum)
                 accum = None
