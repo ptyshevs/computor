@@ -58,11 +58,14 @@ def eval_expression(expr, env):
         
         print(f't={t}')
         if type(t) is Operator:
-            left = expr[i - 1] if i > 0 else None
-            if left is None:
+            if accum is None:
+                left = expr[i - 1] if i > 0 else None
+                if left is None:
+                    left = accum
+                if type(left) is Variable:
+                    left = left.v
+            else:
                 left = accum
-            if type(left) is Variable:
-                left = left.v
             right = expr[i + 1] if i < (n - 1) else None
             if type(right) is Variable:
                 right = right.v
