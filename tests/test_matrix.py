@@ -9,4 +9,8 @@ def test_complex_parsing():
     assert str(evaluate('[[2+3, 3+4] ; [4-4, 5   - 6]]')) == '[5, 7]\n[0, -1]'
 
 def test_init_different_length():
-    assert str(evaluate('[[2];[3,4]]')) == 'Attempted to create matrix of different column length: 2 != 1'
+    try:
+        evaluate('[[2];[3,4]]')
+        assert False
+    except ValueError as e:
+        assert str(e) == 'Attempted to create matrix of different column length: 2 != 1'

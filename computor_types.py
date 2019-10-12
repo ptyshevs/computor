@@ -23,12 +23,12 @@ class Complex(Term):
         return s
     
     def __add__(self, o):
-        if type(o) not in [Complex, Rational]:
-            raise NotImplementedError()
         if type(o) is Complex:
             return Complex(self.re + o.re, self.img + o.img)
-        else:
+        elif type(o) is Rational:
             return Complex(self.re + o, self.img)
+        else:
+            raise NotImplementedError(f'Add {self} ({type(self)}) to {o} ({type(o)})')
     
     def __sub__(self, o):
         if type(o) is Rational:
@@ -46,11 +46,31 @@ class Complex(Term):
         else:
             raise NotImplementedError()
 
+    def __truediv__(self, o):
+        print("Division starts here")
+        if type(o) is Rational:
+            o = Complex(o)
+        if type(o) is Complex:
+            a, b = self.re, self.img
+            c, d = o.re, o.img
+            
+            denom = c * c + d * d
+            return Complex((a * c + b * d) / denom, (b * c - a * d) / denom)
+        else:
+            raise NotImplementedError("Division of complex numbers")
+
     def __neg__(self):
         return Complex(-self.re, -self.img)
     
     def __pos__(self):
         return Complex(self.re, self.img)
+    
+    def conj(self):
+        return Complex(self.re, -self.img)
+    
+    def norm(self):
+        ss = (self.re ** Rational(2) + self.img ** Rational(2))
+        return Rational(ss ** Rational(.5))
 
 class Rational(Term):
     def __init__(self, p, q=1):
@@ -217,7 +237,7 @@ class Matrix(Term):
         if type(o) is Matrix:
             self._validate_shape(o, 'mul')
             return Matrix([[cl * cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
-        elif type(o) is Rational:
+        elif type(o) in [Rational, Complex]:
             return Matrix([[c * o for c in r] for r in self.v])
         else:
             raise NotImplementedError()
@@ -226,7 +246,7 @@ class Matrix(Term):
         if type(o) is Matrix:
             self._validate_shape(o, 'div')
             return Matrix([[cl / cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
-        elif type(o) is Rational:
+        elif type(o) in [Rational, Complex]:
             return Matrix([[c / o for c in r] for r in self.v])
         else:
             raise NotImplementedError()

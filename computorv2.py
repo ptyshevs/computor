@@ -322,14 +322,14 @@ def expand_tokens(tokens):
             unary = True
             print("Checking if +- is unary")
             prev = expanded[i-1] if i > 0 else None
-            # print("prev:", prev)
+            print("prev:", prev)
             if prev and len(prev) > 1:
                 prev = prev[-1]
-            if prev and prev in '0123456789)':
+            if prev and (prev in '0123456789)' or prev not in '+-*/%^=?('):
                 unary = False
             else:
                 next = expanded[i+1] if i < (n-1) else None
-                # print("next:", next)
+                print("next:", next)
                 if next and len(next) > 1:
                     next = next[0]
                 if next and next not in '0123456789':
