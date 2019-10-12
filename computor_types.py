@@ -260,9 +260,16 @@ class Matrix(Term):
             raise ValueError(f"Dimensions mismatch ({op}): {self.shape} != {o.shape}")
 
 class Function(Term):
-    def __init__(self, name, f):
+    def __init__(self, name, arg_name, f):
         self.name = name
+        self.arg_name = arg_name
         self.f = f
+    
+    def apply(self, o):
+        return self.f(o)
+    
+    def __repr__(self):
+        return f'{self.name}({self.arg_name}): {self.f}'
 
 
 if __name__ == '__main__':

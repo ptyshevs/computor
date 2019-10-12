@@ -1,6 +1,7 @@
 import argparse
 import re
 from computor_types import *
+from math import sin, cos, tan
 
 def str_to_num(s):
     try:
@@ -383,7 +384,7 @@ def evaluate(inp, env=None):
     print("RPN:", rpn)
     try:
         result = evaluate_rpn(rpn, env)
-        print("Result:", result)
+        # print("Result:", result)
     except ValueError as e:
         print(e)
     return result
@@ -395,6 +396,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = []
+    default_functions = [Function('sin', 'x', lambda x: sin(x)]
     history = []
     running = True
     while True:
