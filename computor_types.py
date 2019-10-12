@@ -150,7 +150,7 @@ class Rational(Term):
         elif type(o) is Complex:
             return Complex(self) + o
         else:
-            raise NotImplementedError(f"Rational + {o} ({type(o)})")
+            raise NotImplementedError(f"{self} + {o} is not implemented")
 
     def __sub__(self, o):
         if type(o) is Rational:
@@ -164,7 +164,7 @@ class Rational(Term):
         elif type(o) is Complex:
             return Complex(self) - o
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} - {o} is not implemented')
     
     def __mul__(self, o):
         if type(o) is Rational:
@@ -172,31 +172,26 @@ class Rational(Term):
         elif type(o) is Complex:
             return Complex(self) * o
         else:
-            raise NotImplementedError()
-
-    def __div__(self, o):
-        if type(o) is not Rational:
-            raise NotImplementedError()
-        return self * Rational(o.q, o.p)
+            raise NotImplementedError(f'{self} * {o} is not implemented')
     
     def __truediv__(self, o):
         if type(o) is not Rational:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} / {o} is not implemented')
         return self * Rational(o.q, o.p)
     
     def __pow__(self, o):
         if type(o) is not Rational:
-            raise NotImplementedError()
+            raise NotImplementedError(f"{self} ^ {o} is not implemented")
         return Rational(self.v ** o.v)
     
     def __mod__(self, o):
         if type(o) is not Rational:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} % {o} is not implemented')
         return Rational(self.v % o.v)
     
     def __ge__(self, o):
         if type(o) is not Rational:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} >= {o} is not implemented')
         return self.v >= o.v
 
     def __abs__(self):
