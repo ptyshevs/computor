@@ -51,7 +51,7 @@ def row_split(row, char=','):
         elems.append(accum)
     return elems
 
-def parse_matrix(tk, env=None):
+def parse_matrix(tk, env=None, return_matrix=True):
     """ Starts and ends with [] brackets, potential matrix """
     if env is None:
         env = []
@@ -70,8 +70,10 @@ def parse_matrix(tk, env=None):
         expr = [evaluate(elem, env) for elem in vec_elems]
         if any((e is None for e in expr)):
             return None
-        # print("Vector", v, "Elements:", expr)
-        return Matrix([expr])
+        if return_matrix:
+            return Matrix([expr])
+        else:
+            return expr
 
     else:
         # Matrix, validate that each rows starts and ends with proper brackets
@@ -86,6 +88,22 @@ def parse_matrix(tk, env=None):
         if not valid:
             print("Invalid matrix format")
             return None
+        else:
+            print("Valid multi-row matrix")
+            matrix_rows = []
+            row_len = None
+            for r in rows:
+                res = parse_matrix(r, env=env, return_matrix=False)
+                if res is None or len(res) == 0:
+                    raise ValueError(f"Invalid matrix row: {r}")
+                if row_len is None:
+                    row_len = len(res)
+                elif len(res) != row_len:
+                    raise ValueError(f'Attempted to create matrix of different column length: {len(res)} != {row_len}')
+                matrix_rows.append(res)
+            print("Matrix rows:", matrix_rows)
+            return Matrix(matrix_rows)
+        
 
 
 def match_token(token, env=None):
@@ -278,13 +296,12 @@ def expand_tokens(tokens):
     i = 0
     while i < n:
         t = expanded[i]
-        print('t=', t)
         if accum is None:
             accum = t
         else:
             accum += t
         if t == '[':
-            print("Start collecting matrix")
+            # print("Start collecting matrix")
             n_open = 1
             while True:
                 i += 1
@@ -305,14 +322,14 @@ def expand_tokens(tokens):
             unary = True
             print("Checking if +- is unary")
             prev = expanded[i-1] if i > 0 else None
-            print("prev:", prev)
+            # print("prev:", prev)
             if prev and len(prev) > 1:
                 prev = prev[-1]
             if prev and prev in '0123456789)':
                 unary = False
             else:
                 next = expanded[i+1] if i < (n-1) else None
-                print("next:", next)
+                # print("next:", next)
                 if next and len(next) > 1:
                     next = next[0]
                 if next and next not in '0123456789':

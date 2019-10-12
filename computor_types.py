@@ -201,18 +201,48 @@ class Matrix(Term):
     
     def __add__(self, o):
         if type(o) is Matrix:
-            if self.shape != o.shape:
-                raise ValueError(f"Dimensions mismatch (add): {self.shape} != {o.shape}")
+            self._validate_shape(o, 'add')
             return Matrix([[cl + cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
         else:
             raise NotImplementedError()
     
     def __sub__(self, o):
         if type(o) is Matrix:
-            if self.shape != o.shape:
-                raise ValueError(f'Dimensions mismatch (sub): {self.shape} != {o.shape}')
+            self._validate_shape(o, 'sub')
             return Matrix([[cl - cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
-        
+        else:
+            raise NotImplementedError()
+    
+    def __mul__(self, o):
+        if type(o) is Matrix:
+            self._validate_shape(o, 'mul')
+            return Matrix([[cl * cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        elif type(o) is Rational:
+            return Matrix([[c * o for c in r] for r in self.v])
+        else:
+            raise NotImplementedError()
+    
+    def __truediv__(self, o):
+        if type(o) is Matrix:
+            self._validate_shape(o, 'div')
+            return Matrix([[cl / cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        elif type(o) is Rational:
+            return Matrix([[c / o for c in r] for r in self.v])
+        else:
+            raise NotImplementedError()
+    
+    def __neg__(self):
+        return Matrix([[-c for c in r] for r in self.v])
+    
+    def __pos__(self):
+        return Matrix([[+c for c in r] for r in self.v])
+    
+    def __abs__(self):
+        return Matrix([[abs(c) for c in r] for r in self.v])
+    
+    def _validate_shape(self, o, op):
+        if self.shape != o.shape:
+            raise ValueError(f"Dimensions mismatch ({op}): {self.shape} != {o.shape}")
 
 class Function(Term):
     def __init__(self, name, f):
