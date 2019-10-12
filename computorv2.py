@@ -65,14 +65,12 @@ def parse_matrix(tk, env=None):
             n_squizzes += 1
             v = v_squeezed
             v_squeezed = squeeze(v)
-        print("Vector", v, "Squizzes:", n_squizzes)
+        # print("Vector", v, "Squizzes:", n_squizzes)
         vec_elems = row_split(v)
-        # vec_elems = v.split(',')
-        # expr = tokens_to_expr(vec_elems, env)
         expr = [evaluate(elem, env) for elem in vec_elems]
         if any((e is None for e in expr)):
             return None
-        print("Vector", v, "Elements:", expr)
+        # print("Vector", v, "Elements:", expr)
         return Matrix([expr])
 
     else:
