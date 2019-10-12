@@ -8,7 +8,89 @@ def str_to_num(s):
     except ValueError:
         return float(s)
 
-def match_token(token, env):
+def squeeze(mat_row):
+    if len(mat_row) < 2 or mat_row[0] != '[':
+        return mat_row
+    cnt_open = 1
+    i = 1
+    n = len(mat_row)
+    while i < n:
+        if cnt_open == 0:
+            break
+        t = mat_row[i]
+        if t == '[':
+            cnt_open += 1
+        elif t == ']':
+            cnt_open -= 1
+        i += 1
+    print(f"Squeeze attempt: i={i} | cnt_open={cnt_open} | n={n}")
+    if cnt_open == 0 and i == n:
+        return mat_row[1:-1]
+    else:
+        return mat_row
+
+def row_split(row):
+    """ Split row by comma, but only on the zero level """
+    depth = 0
+    elems = []
+    accum = None
+    for c in row:
+        if c == '[':
+            depth += 1
+        elif c == ']':
+            depth -= 1
+        elif c == ',' and depth == 0:
+            elems.append(accum)
+            accum = None
+            continue
+        if accum is None:
+            accum = c
+        else:
+            accum += c
+    if accum is not None:
+        elems.append(accum)
+    return elems
+
+def parse_matrix(tk, env=None):
+    """ Starts and ends with [] brackets, potential matrix """
+    if env is None:
+        env = []
+    tk = tk[1:-1]  # Strip leading and trailing brackets
+    rows = tk.split(";")
+    if len(rows) == 1:
+        v = rows[0]
+        v_squeezed = squeeze(v)
+        n_squizzes = 0
+        while v_squeezed != v:
+            n_squizzes += 1
+            v = v_squeezed
+            v_squeezed = squeeze(v)
+        print("Vector", v, "Squizzes:", n_squizzes)
+        vec_elems = row_split(v)
+        # vec_elems = v.split(',')
+        # expr = tokens_to_expr(vec_elems, env)
+        expr = [evaluate(elem, env) for elem in vec_elems]
+        if any((e is None for e in expr)):
+            return None
+        print("Vector", v, "Elements:", expr)
+        return Matrix([expr])
+
+    else:
+        # Matrix, validate that each rows starts and ends with proper brackets
+        valid = True
+        for r in rows:
+            if len(r) < 2:
+                valid = False
+                break
+            elif r[0] != '[' or r[-1] != ']':
+                valid = False
+                break
+        if not valid:
+            print("Invalid matrix format")
+            return None
+
+
+def match_token(token, env=None):
     """ use re.fullmatch to map token to object """
     number_re = r'[\-\+]?[0-9]+\.?[0-9]*'
     operator_re = r'(\*\*)|([\=\+\-\*\/\^\%\?])'
@@ -16,6 +98,9 @@ def match_token(token, env):
     complex_re = r'([\-\+]?[0-9]*)([\+\-]?[0-9]*)i'
     matrix_re = r'\[.*\]'
     var_re = r'[a-zA-Z]+'
+
+    if env is None:
+        env = []
     # 1. Operator
     mo = re.fullmatch(operator_re, token)
     if mo:
@@ -54,96 +139,14 @@ def match_token(token, env):
     # 4. Matrix
     mo = re.fullmatch(matrix_re, token)
     if mo:
-
-        print("MATRIX", mo, mo.groups())
-
-def eval_expression(expr, env):
-    """ Expression is expected to simplify to a single term """
-    accum = None
-    expect_operator = False
-    n = len(expr)
-    for i in range(n):
-        t = expr[i]
-        if type(t) is Variable:
-            found = False
-            for v in env:
-                if t == v:
-                    print(f"Var {t} exists in env")
-                    t = v
-                    found = True
-                    break
-            if t.v is None:
-                raise ValueError(f"Variable {t} doesn't have value associated with it")
-            else:
-                t = t.v
-        
-        if type(t) is Operator:
-            if accum is None:
-                left = expr[i - 1] if i > 0 else None
-                if left is None:
-                    left = accum
-                if type(left) is Variable:
-                    left = left.v
-            else:
-                left = accum
-            right = expr[i + 1] if i < (n - 1) else None
-            if type(right) is Variable:
-                right = right.v
-            print(f"left={left}|right={right}|op={t}")
-            if t.n_operands == 2 and (left is None or right is None):
-                raise ValueError(f"Invalid expression: {expr} (Operator doesn't have enough operands)")
-            elif t.n_operands == 1 and left is None:
-                raise ValueError(f"Invalid expression: {expr} (Operator doesn't have enough operands)")
-            else:
-                accum = t.eval(left, right)
-                expect_operator = False
-        else:
-            if accum is None:
-                accum = t
-                expect_operator = True
-            elif expect_operator:
-                raise ValueError(f'Invalid expression: {expr}. Expected operator, found term {t} at {i} place instead')
-            else:
-                expect_operator = True
-    return accum
+        mat_repr = mo[0]
+        mat = parse_matrix(mat_repr, env)
+        print("MATRIX REPR:", mat_repr)
+        print("Matrix:", mat)
+        if mat:
+            return mat
 
 
-def eval_statement(expr, env):
-    left = []
-    right = []
-    left_side = True
-    cnt_equals = 0
-    for t in expr:
-        if t == '=':
-            left_side = False
-            cnt_equals += 1
-            if cnt_equals > 1:
-                return "Too many assignment values"
-        else:
-            if left_side:
-                left.append(t)
-            else:
-                right.append(t)
-    if len(left) != 1 or type(left[0]) is not Variable:
-        return "Left side of assignment should be variable"
-    if len(right) == 0:
-        return "Right side of assignment cannot be empty"
-
-    right_side = eval_expression(right, env)
-    print("Right side:", right_side)
-    var = left[0]
-    found = False
-    for thing in env:
-        if thing == var:
-            thing.assign(right_side)
-            found = True
-            print("Found, assigned to it")
-            break
-    if not found:
-        var.assign(right_side)
-        print("var now:", var)
-        env.append(var)
-    return right_side
 
 def parse_keywords(inp):
     cli_args = {'quit': False, 'history': False, 'env': False}
@@ -166,7 +169,7 @@ def infix_to_rpn(expr):
     output = []  # Queue
     while expr:
         tk = expr.pop(0)
-        if type(tk) in [Rational, Complex, Variable]:  # TODO: Add complex and matrix here
+        if type(tk) in [Rational, Complex, Variable, Matrix]:
             output.append(tk)
         elif type(tk) is Function:
             operators.append(tk)
@@ -222,7 +225,7 @@ def evaluate_rpn(rpn, env):
                     break
             if not found and val.v is not None:
                 env.append(val)
-        if type(val) in [Rational, Complex, Variable]:
+        if type(val) in [Rational, Complex, Variable, Matrix]:
             eval_stack.append(val)
         elif type(val) is Operator:
             n_op = val.n_operands
@@ -269,41 +272,63 @@ def evaluate_rpn(rpn, env):
     return res
 
 def expand_tokens(tokens):
-    split_re = r'([\*\^\/\(\)\-\+\%\=\?])'
+    split_re = r'([\*\^\/\(\)\-\+\%\=\?\[\]])'
     exp = []
-    for tk in tokens:
-        expanded = [c for c in re.split(split_re, tk) if c]
-        n = len(expanded)
-        accum = None
-        for i in range(n):
-            t = expanded[i]
-            if accum is None:
-                accum = t
-            else:
+    expanded = [c for c in re.split(split_re, tokens) if c]
+    n = len(expanded)
+    accum = None
+    i = 0
+    while i < n:
+        t = expanded[i]
+        print('t=', t)
+        if accum is None:
+            accum = t
+        else:
+            accum += t
+        if t == '[':
+            print("Start collecting matrix")
+            n_open = 1
+            while True:
+                i += 1
+                if n_open <= 0 or i >= n:
+                    break
+                t = expanded[i]
+                if t == '[':
+                    n_open += 1
+                elif t == ']':
+                    n_open -= 1 
                 accum += t
-            if t in list('+-'):
-                unary = True
-                # print("Checking if +- is unary")
-                prev = expanded[i-1] if i > 0 else None
-                if prev and len(prev) > 1:
-                    prev = prev[-1]
-                if prev and prev in '0123456789)':
-                    unary = False
-                else:
-                    next = expanded[i+1] if i < (n-1) else None
-                    if next and len(next) > 1:
-                        next = next[0]
-                    if next and next not in '0123456789':
-                        unary = False
-
-                if not unary:
-                    exp.append(accum)
-                    accum = None
-            else:
+            if accum:
                 exp.append(accum)
                 accum = None
-        if accum is not None:
+            continue
+
+        if t in list('+-'):
+            unary = True
+            print("Checking if +- is unary")
+            prev = expanded[i-1] if i > 0 else None
+            print("prev:", prev)
+            if prev and len(prev) > 1:
+                prev = prev[-1]
+            if prev and prev in '0123456789)':
+                unary = False
+            else:
+                next = expanded[i+1] if i < (n-1) else None
+                print("next:", next)
+                if next and len(next) > 1:
+                    next = next[0]
+                if next and next not in '0123456789':
+                    unary = False
+
+            if not unary:
+                exp.append(accum)
+                accum = None
+        else:
             exp.append(accum)
+            accum = None
+        i += 1
+    if accum is not None:
+        exp.append(accum)
     return exp
 
 def tokens_to_expr(tokens, env):
@@ -324,7 +349,8 @@ def evaluate(inp, env=None):
     if env is None:
         env = []
     result = None
-    tokens = [c for c in inp.split(" ") if c]
+    # Remove all spaces
+    tokens = ''.join([c for c in inp.split(" ") if c])
     print("Tokens:", tokens)
     # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
     exp_tokens = expand_tokens(tokens)

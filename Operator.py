@@ -32,14 +32,14 @@ class Operator(Term):
             if not r:
                 return +l
             else:
-                return l + r
+                return r + l
         elif self.op == '-':
             if not r:
                 return -l
             else:
                 return r - l
         elif self.op == '*':
-            return l * r
+            return r * l
         elif self.op == '/':
             return r / l
         elif self.op == '%':
@@ -47,7 +47,7 @@ class Operator(Term):
         elif self.op == '^':
             return r ** l
         elif self.op == '**':
-            return l @ r
+            return r @ l
         elif self.op == '?':
             return l
         elif self.op == '~':  # TODO: Maybe implement this one

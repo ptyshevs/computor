@@ -83,6 +83,16 @@ class Rational(Term):
             q = 10 ** order
 
         self.p, self.q = self._simplify(p, q)
+        # Sign resolution
+        p_sign = 1 if self.p >= 0 else -1
+        q_sign = 1 if self.q >= 0 else -1
+        if p_sign == -1 and q_sign == -1:
+            p_sign, q_sign = 1, 1
+        elif q_sign == -1:
+            p_sign, q_sign = -1, 1
+
+        self.p = p_sign * abs(self.p)
+        self.q = q_sign * abs(self.q)
 
         self.v = p / float(q)
 
@@ -182,6 +192,27 @@ class Rational(Term):
 class Matrix(Term):
     def __init__(self, A):
         self.v = [[c for c in r] for r in A]
+        self.n_rows = len(self.v)
+        self.n_cols = len(self.v[0]) if len(self.v) > 0 else 0
+        self.shape = (self.n_rows, self.n_cols)
+    
+    def __repr__(self):
+        return '\n'.join((str(_) for _ in self.v))
+    
+    def __add__(self, o):
+        if type(o) is Matrix:
+            if self.shape != o.shape:
+                raise ValueError(f"Dimensions mismatch (add): {self.shape} != {o.shape}")
+            return Matrix([[cl + cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        else:
+            raise NotImplementedError()
+    
+    def __sub__(self, o):
+        if type(o) is Matrix:
+            if self.shape != o.shape:
+                raise ValueError(f'Dimensions mismatch (sub): {self.shape} != {o.shape}')
+            return Matrix([[cl - cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        
 
 class Function(Term):
     def __init__(self, name, f):
