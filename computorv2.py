@@ -29,7 +29,7 @@ def squeeze(mat_row):
     else:
         return mat_row
 
-def row_split(row):
+def row_split(row, char=','):
     """ Split row by comma, but only on the zero level """
     depth = 0
     elems = []
@@ -39,7 +39,7 @@ def row_split(row):
             depth += 1
         elif c == ']':
             depth -= 1
-        elif c == ',' and depth == 0:
+        elif c == char and depth == 0:
             elems.append(accum)
             accum = None
             continue
@@ -56,7 +56,7 @@ def parse_matrix(tk, env=None):
     if env is None:
         env = []
     tk = tk[1:-1]  # Strip leading and trailing brackets
-    rows = tk.split(";")
+    rows = row_split(tk, ';')
     if len(rows) == 1:
         v = rows[0]
         v_squeezed = squeeze(v)
@@ -66,7 +66,7 @@ def parse_matrix(tk, env=None):
             v = v_squeezed
             v_squeezed = squeeze(v)
         # print("Vector", v, "Squizzes:", n_squizzes)
-        vec_elems = row_split(v)
+        vec_elems = row_split(v, ',')
         expr = [evaluate(elem, env) for elem in vec_elems]
         if any((e is None for e in expr)):
             return None
