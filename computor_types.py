@@ -2,6 +2,7 @@ import sys
 from Term import *
 from Operator import *
 from Variable import *
+import computorv2
 
 class Complex(Term):
     def __init__(self, re, img=0):
@@ -81,13 +82,12 @@ class Rational(Term):
         try:
             strp = str(p)
             if type(p) is float:
-                if 'e' in strp and '.' not in strp:  # Very big integer
+                if 'e' in strp:  # Very big integer
                     p = int(p)
                 else:
                     p = int(strp)
             elif type(p) is not int:
                 p = int(strp)
-            
             if type(q) is float:
                 q = int(q)
             elif type(q) is not int:
@@ -95,7 +95,6 @@ class Rational(Term):
         except ValueError:
             if q != 1:
                 raise ValueError(f'Failed to create Rational: p is float and q is not 1: {p}/{q}')
-            print("HERE, type:", type(p))
             ps = str(p)
             dot = ps.index('.')
             order = len(ps) - 1 - dot
@@ -260,19 +259,26 @@ class Matrix(Term):
             raise ValueError(f"Dimensions mismatch ({op}): {self.shape} != {o.shape}")
 
 class Function(Term):
-    def __init__(self, name, arg_name, f):
+    def __init__(self, name, arg_name, body, env, f=None):
         self.name = name
         self.arg_name = arg_name
         self.f = f
-    
+        self.body = body
+        self.sub_body = ' '.join((c if c != arg_name else f'%_{arg_name}_%' for c in body))
+        self.env = env
+
     def apply(self, o):
-        if type(o) is Rational:
-            return Rational(self.f(o.v))
-        
-        return self.f(o)
+        if type(o) is Variable:
+            o = o.dereference()
+        res = computorv2.evaluate(' '.join((c if c != self.arg_name else str(o) for c in self.body)), self.env)
+        print(f"applying {self.name}({self.arg_name}) on {o}: {res}")
+        return res
     
     def __repr__(self):
-        return f'{self.name}({self.arg_name}): {self.f}'
+        return f'{self.name}({self.arg_name})={self.body}'
+    
+    def __str__(self):
+        return f'{self.name}'
 
 
 if __name__ == '__main__':

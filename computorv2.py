@@ -1,6 +1,6 @@
 import argparse
 import re
-from computor_types import *
+import computor_types as ct
 from math import sin, cos, tan, tanh
 
 def str_to_num(s):
@@ -53,7 +53,7 @@ def row_split(row, char=','):
     return elems
 
 def parse_matrix(tk, env=None, return_matrix=True):
-    """ Starts and ends with [] brackets, potential matrix """
+    """ Starts and ends with [] brackets, potential ct.Matrix """
     if env is None:
         env = []
     tk = tk[1:-1]  # Strip leading and trailing brackets
@@ -72,12 +72,12 @@ def parse_matrix(tk, env=None, return_matrix=True):
         if any((e is None for e in expr)):
             return None
         if return_matrix:
-            return Matrix([expr])
+            return ct.Matrix([expr])
         else:
             return expr
 
     else:
-        # Matrix, validate that each rows starts and ends with proper brackets
+        # ct.Matrix, validate that each rows starts and ends with proper brackets
         valid = True
         for r in rows:
             if len(r) < 2:
@@ -87,23 +87,23 @@ def parse_matrix(tk, env=None, return_matrix=True):
                 valid = False
                 break
         if not valid:
-            print("Invalid matrix format")
+            print("Invalid ct.Matrix format")
             return None
         else:
-            print("Valid multi-row matrix")
+            print("Valid multi-row ct.Matrix")
             matrix_rows = []
             row_len = None
             for r in rows:
                 res = parse_matrix(r, env=env, return_matrix=False)
                 if res is None or len(res) == 0:
-                    raise ValueError(f"Invalid matrix row: {r}")
+                    raise ValueError(f"Invalid ct.Matrix row: {r}")
                 if row_len is None:
                     row_len = len(res)
                 elif len(res) != row_len:
-                    raise ValueError(f'Attempted to create matrix of different column length: {len(res)} != {row_len}')
+                    raise ValueError(f'Attempted to create ct.Matrix of different column length: {len(res)} != {row_len}')
                 matrix_rows.append(res)
-            print("Matrix rows:", matrix_rows)
-            return Matrix(matrix_rows)
+            print("ct.Matrix rows:", matrix_rows)
+            return ct.Matrix(matrix_rows)
         
 
 
@@ -118,20 +118,20 @@ def match_token(token, env=None):
 
     if env is None:
         env = []
-    # 1. Operator
+    # 1. ct.Operator
     mo = re.fullmatch(operator_re, token)
     if mo:
-        return Operator(mo[0])
+        return ct.Operator(mo[0])
     # 1.2 Brackets
     mo = re.fullmatch(brackets_re, token)
     if mo:
         return mo[0]
-    # 2. Rational number
+    # 2. ct.Rational number
     mo = re.fullmatch(number_re, token)
     if mo:
         number = str_to_num(mo[0])
-        return Rational(number)
-    # 2.2 Complex number
+        return ct.Rational(number)
+    # 2.2 ct.Complex number
     mo = re.fullmatch(complex_re, token)
     if mo:
         real, img = mo[1], mo[2]
@@ -140,27 +140,30 @@ def match_token(token, env=None):
             img = mo[1]
         if not img:  # i
             img = 1
-        return Complex(Rational(real), Rational(img))
-    # 3. Variable
+        return ct.Complex(ct.Rational(real), ct.Rational(img))
+    # 3. ct.Variable
     mo = re.fullmatch(var_re, token)
     if mo:
         name = mo[0]
         if name.lower() == 'i':
-            print("Variable cannot be called i (for obvious reasons)")
+            print("ct.Variable cannot be called i (for obvious reasons)")
             return None
         else:
-            var = Variable(name)
+            var = ct.Variable(name)
             for t in env:
+                print(t, t.name)
                 if var.name == t.name:
+                    print(f"Returned {t.name} from the environment")
                     return t
+            print(f'Returned {var} as a variable, env:', env)
             return var
-    # 4. Matrix
+    # 4. ct.Matrix
     mo = re.fullmatch(matrix_re, token)
     if mo:
         mat_repr = mo[0]
         mat = parse_matrix(mat_repr, env)
-        print("MATRIX REPR:", mat_repr)
-        print("Matrix:", mat)
+        print("ct.Matrix REPR:", mat_repr)
+        print("ct.Matrix:", mat)
         if mat:
             return mat
 
@@ -185,25 +188,27 @@ def show_env(env):
 def infix_to_rpn(expr):
     operators = []  # Stack
     output = []  # Queue
+    print("INFIX TO RPN")
     while expr:
         tk = expr.pop(0)
-        if type(tk) in [Rational, Complex, Variable, Matrix]:
+        print(f'tk={tk}, type={type(tk)}')
+        if type(tk) in [ct.Rational, ct.Complex, ct.Variable, ct.Matrix]:
             output.append(tk)
-        elif type(tk) is Function:
+        elif type(tk) is ct.Function:
             print(f"Added {tk} as a func")
             operators.append(tk)
-        elif type(tk) is Operator:
+        elif type(tk) is ct.Operator:
             while True:
                 if len(operators) == 0:
                     break
                 head = operators[-1]
                 if head == '(':
                     break
-                if type(head) is Function:
+                if type(head) is ct.Function:
                     output.append(operators.pop())
-                elif type(head) is Operator and head.precedence > tk.precedence:
+                elif type(head) is ct.Operator and head.precedence > tk.precedence:
                     output.append(operators.pop())
-                elif type(head) is Operator and head.precedence == tk.precedence and head.associativity == 'left':
+                elif type(head) is ct.Operator and head.precedence == tk.precedence and head.associativity == 'left':
                     output.append(operators.pop())
                 else:
                     break
@@ -235,7 +240,7 @@ def evaluate_rpn(rpn, env):
     eval_stack = []
     while rpn:
         val = rpn.pop(0)
-        if type(val) is Variable:
+        if type(val) is ct.Variable:
             found = False
             for t in env:
                 if val == t:
@@ -244,49 +249,53 @@ def evaluate_rpn(rpn, env):
                     break
             if not found and val.v is not None:
                 env.append(val)
-        if type(val) in [Rational, Complex, Variable, Matrix]:
+        if type(val) in [ct.Rational, ct.Complex, ct.Variable, ct.Matrix]:
             eval_stack.append(val)
-        elif type(val) is Operator:
+        elif type(val) is ct.Operator:
             n_op = val.n_operands
             if not eval_stack:
-                raise ValueError(f"Not enough operands to perform calculation | operator {val}")
+                raise ValueError(f"Not enough operands to perform calculation | ct.Operator {val}")
             op = eval_stack.pop()
             if n_op == 1:
                 eval_stack.append(val.eval(op))
             else:
                 if not eval_stack:
                     if val in ['+', '-']:
-                        print(f"Unary {val}")
-                        if type(op) is Variable:
+                        # print(f"Unary {val}")
+                        if type(op) is ct.Variable:
                             op = op.dereference()
                         eval_stack.append(val.eval(op))
                     else:
-                        raise ValueError(f"Not enough operands to perform calculation | operator {val}, op1 {op}")
+                        raise ValueError(f"Not enough operands to perform calculation | ct.Operator {val}, op1 {op}")
                 else:
                     op2 = eval_stack.pop()
-                    print(f"OP={op}|OP2={op2}")
+                    # print(f"OP={op}|OP2={op2}")
                     if val != '=':
-                        if type(op) is Variable:
+                        if type(op) is ct.Variable:
                             op = op.dereference()
-                        if type(op2) is Variable:
+                        if type(op2) is ct.Variable:
                             op2 = op2.dereference()
                     else:
-                        if type(op) is Variable:
+                        if type(op) is ct.Variable:
                             op = op.dereference()
                         if op2 not in env:
                             env.append(op2)
                     eval_stack.append(val.eval(op, op2))
-        elif type(val) is Function:
+        elif type(val) is ct.Function:
             if not eval_stack:
-                raise ValueError(f"Not enough operands to perform calculation | operator {val}")
-            eval_stack.append(val.apply(eval_stack.pop()))
+                if rpn:  # ct.Function without ct.Variable, but there is still input
+                    raise ValueError(f"Not enough operands to perform calculation | ct.Operator {val}")
+                else:   # Only ct.Function
+                    eval_stack.append(val)
+            else:
+                eval_stack.append(val.apply(eval_stack.pop()))
         else:
             raise NotImplementedError(val, type(val))
     if len(eval_stack) != 1:
         raise ValueError("Expression doesn't evaluate to a single value")
-    print("EVAL STACK:", eval_stack)
+    # print("EVAL STACK:", eval_stack)
     res = eval_stack[0]
-    if type(res) is Variable:
+    if type(res) is ct.Variable:
         return res.v
     return res
 
@@ -304,7 +313,7 @@ def expand_tokens(tokens):
         else:
             accum += t
         if t == '[':
-            # print("Start collecting matrix")
+            # print("Start collecting ct.Matrix")
             n_open = 1
             while True:
                 i += 1
@@ -323,16 +332,16 @@ def expand_tokens(tokens):
 
         if t in list('+-'):
             unary = True
-            print("Checking if +- is unary")
+            # print("Checking if +- is unary")
             prev = expanded[i-1] if i > 0 else None
-            print("prev:", prev)
+            # print("prev:", prev)
             if prev and len(prev) > 1:
                 prev = prev[-1]
             if prev and (prev in '0123456789)' or prev not in '+-*/%^=?('):
                 unary = False
             else:
                 next = expanded[i+1] if i < (n-1) else None
-                print("next:", next)
+                # print("next:", next)
                 if next and len(next) > 1:
                     next = next[0]
                 if next and next not in '0123456789':
@@ -360,53 +369,46 @@ def tokens_to_expr(tokens, env):
         expr.append(obj)
     return expr
 
-def simplify_expr(expr):
-    """ This is the body of function to be simplified, i.e. common terms should be combined """
-    d = 0
-    n = len(expr)
-    res = []
-    max_depth = 0
-    context_stack = {0: []}
-    for i in range(n):
-        t = expr[i]
-        if d not in context_stack:
-            context_stack[d] = []
-        
-        ctx = context_stack[d]
-        ctx.append(t)
-        if t == '(':
-            d += 1
-        elif t == ')':
-            d -= 1
-            res = res + ctx[:]
-            ctx.clear()
-        if d > max_depth:
-            max_depth = d
-
-    for _ in reversed(context_stack[0]):
-        res.insert(0, _)
-    # res.extend(context_stack[0])
-    print("MAX DEPTH = ", max_depth)
-    print(context_stack)
-    return res
 
 def combine_functions(tokens, env):
     if len(tokens) < 6:
         return tokens
-    if Operator('=') not in tokens:
+    if ct.Operator('=') not in tokens:
         return tokens
-    print("Start working on function")
+    print("Start working on ct.Function")
     func_name, lp, var, rp, assign, *expr = tokens
     print("EXPR:", expr)
-    if type(func_name) not in [Function, Variable]:
+    if type(func_name) not in [ct.Function, ct.Variable]:
         return tokens
-    if lp != '(' or rp != ')' or assign != Operator('='):
+    if lp != '(' or rp != ')' or assign != ct.Operator('='):
         return tokens
 
-    res = simplify_expr(expr)
-    func_body = ' '.join((str(_) if type(_) is not Variable else _.name for _ in res))
-    print("res:", res)
-    return tokens
+    body = []
+    sub_body = []
+    for _ in expr:
+        if type(_) in [ct.Variable, ct.Function]:
+            if _.name == func_name:
+                raise ValueError("Recursion is prohibited. Nice try")
+            else:
+                body.append(_.name)
+                if _.name == var:
+                    sub_body.append(f'%_{_.name}_%')
+                else:
+                    sub_body.append(_.name)
+        else:
+            body.append(str(_))
+            sub_body.append(str(_))
+    
+    func_body = ' '.join(body)
+    f = ct.Function(str(func_name), str(var), func_body, env)
+    print("ct.Function BODY:", f.body)
+    print("ct.Function SUB_BODY:", f.sub_body)
+    if func_name not in env:
+        env.append(f)
+    else:
+        env.pop(env.index(func_name))
+        env.append(f)
+    return [f]
 
 def evaluate(inp, env=None, return_rpn=False):
     """ 
@@ -427,7 +429,7 @@ def evaluate(inp, env=None, return_rpn=False):
     if not expr:
         return None
 
-    print("Expression:", expr)
+    print("Expression:", [(c, type(c)) for c in expr])
     # At this point all tokens are interpreted and expanded, so we can
     # proceed with preparing it into form that is suitable for calculation
     rpn = infix_to_rpn(expr)
@@ -448,8 +450,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = []
-    default_functions = [Function('sin', 'x', lambda x: sin(x)), Function('cos', 'x', lambda x: cos(x)),
-                         Function('tan', 'x', lambda x: tan(x)), Function('tanh', 'x', lambda x: tanh(x))]
+    #ct.Function('sin', 'x', lambda x: sin(x)), ct.Function('cos', 'x', lambda x: cos(x)),
+    #                     ct.Function('tan', 'x', lambda x: tan(x)), ct.Function('tanh', 'x', lambda x: tanh(x))
+    default_functions = []
     env.extend(default_functions)
     history = []
     running = True

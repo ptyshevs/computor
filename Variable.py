@@ -26,6 +26,6 @@ class Variable(Term):
         return self.v + o
     
     def dereference(self):
-        # if self.v is None:
-            # raise ValueError(f"Attempted to dereference Variable {self}")
+        if self.v is None:
+            raise ValueError(f"Attempted to dereference Variable {self}")
         return self.v
