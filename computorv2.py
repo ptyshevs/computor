@@ -297,6 +297,8 @@ def evaluate_rpn(rpn, env):
     res = eval_stack[0]
     if type(res) is ct.Variable:
         return res.v
+    if type(res) is ct.Function:
+        return res.body
     return res
 
 def expand_tokens(tokens):
@@ -387,7 +389,7 @@ def combine_functions(tokens, env):
     sub_body = []
     for _ in expr:
         if type(_) in [ct.Variable, ct.Function]:
-            if _.name == func_name:
+            if _.name == str(func_name):
                 raise ValueError("Recursion is prohibited. Nice try")
             else:
                 body.append(_.name)
