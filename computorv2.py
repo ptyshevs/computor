@@ -1,7 +1,7 @@
 import argparse
 import re
 from computor_types import *
-from math import sin, cos, tan
+from math import sin, cos, tan, tanh
 
 def str_to_num(s):
     try:
@@ -134,11 +134,12 @@ def match_token(token, env=None):
     # 2.2 Complex number
     mo = re.fullmatch(complex_re, token)
     if mo:
-        print(mo, mo.groups())
         real, img = mo[1], mo[2]
         if not img:
             real = 0
             img = mo[1]
+        if not img:  # i
+            img = 1
         return Complex(Rational(real), Rational(img))
     # 3. Variable
     mo = re.fullmatch(var_re, token)
@@ -150,7 +151,7 @@ def match_token(token, env=None):
         else:
             var = Variable(name)
             for t in env:
-                if var == t:
+                if var.name == t.name:
                     return t
             return var
     # 4. Matrix
@@ -179,7 +180,7 @@ def show_history(history):
     print(history)  # TODO: Pretty formatting
 
 def show_env(env):
-    print(env)  # Todo: Pretty formatting
+    print(', '.join(f'({type(v)}) {v}' for v in env))  # Todo: Pretty formatting
 
 def infix_to_rpn(expr):
     operators = []  # Stack
@@ -189,6 +190,7 @@ def infix_to_rpn(expr):
         if type(tk) in [Rational, Complex, Variable, Matrix]:
             output.append(tk)
         elif type(tk) is Function:
+            print(f"Added {tk} as a func")
             operators.append(tk)
         elif type(tk) is Operator:
             while True:
@@ -277,7 +279,7 @@ def evaluate_rpn(rpn, env):
         elif type(val) is Function:
             if not eval_stack:
                 raise ValueError(f"Not enough operands to perform calculation | operator {val}")
-            eval_stack.append(val.eval(eval_stack.pop()))
+            eval_stack.append(val.apply(eval_stack.pop()))
         else:
             raise NotImplementedError(val, type(val))
     if len(eval_stack) != 1:
@@ -358,7 +360,55 @@ def tokens_to_expr(tokens, env):
         expr.append(obj)
     return expr
 
-def evaluate(inp, env=None):
+def simplify_expr(expr):
+    """ This is the body of function to be simplified, i.e. common terms should be combined """
+    d = 0
+    n = len(expr)
+    res = []
+    max_depth = 0
+    context_stack = {0: []}
+    for i in range(n):
+        t = expr[i]
+        if d not in context_stack:
+            context_stack[d] = []
+        
+        ctx = context_stack[d]
+        ctx.append(t)
+        if t == '(':
+            d += 1
+        elif t == ')':
+            d -= 1
+            res = res + ctx[:]
+            ctx.clear()
+        if d > max_depth:
+            max_depth = d
+
+    for _ in reversed(context_stack[0]):
+        res.insert(0, _)
+    # res.extend(context_stack[0])
+    print("MAX DEPTH = ", max_depth)
+    print(context_stack)
+    return res
+
+def combine_functions(tokens, env):
+    if len(tokens) < 6:
+        return tokens
+    if Operator('=') not in tokens:
+        return tokens
+    print("Start working on function")
+    func_name, lp, var, rp, assign, *expr = tokens
+    print("EXPR:", expr)
+    if type(func_name) not in [Function, Variable]:
+        return tokens
+    if lp != '(' or rp != ')' or assign != Operator('='):
+        return tokens
+
+    res = simplify_expr(expr)
+    func_body = ' '.join((str(_) if type(_) is not Variable else _.name for _ in res))
+    print("res:", res)
+    return tokens
+
+def evaluate(inp, env=None, return_rpn=False):
     """ 
     Evaluation pipeline
     """
@@ -373,7 +423,7 @@ def evaluate(inp, env=None):
     print("Expanded tokens:", exp_tokens)
 
     expr = tokens_to_expr(exp_tokens, env)
-
+    expr = combine_functions(expr, env)
     if not expr:
         return None
 
@@ -382,6 +432,8 @@ def evaluate(inp, env=None):
     # proceed with preparing it into form that is suitable for calculation
     rpn = infix_to_rpn(expr)
     print("RPN:", rpn)
+    if return_rpn:
+        return rpn
     try:
         result = evaluate_rpn(rpn, env)
         # print("Result:", result)
@@ -396,7 +448,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = []
-    default_functions = [Function('sin', 'x', lambda x: sin(x)]
+    default_functions = [Function('sin', 'x', lambda x: sin(x)), Function('cos', 'x', lambda x: cos(x)),
+                         Function('tan', 'x', lambda x: tan(x)), Function('tanh', 'x', lambda x: tanh(x))]
+    env.extend(default_functions)
     history = []
     running = True
     while True:

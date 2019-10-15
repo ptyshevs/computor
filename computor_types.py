@@ -266,6 +266,9 @@ class Function(Term):
         self.f = f
     
     def apply(self, o):
+        if type(o) is Rational:
+            return Rational(self.f(o.v))
+        
         return self.f(o)
     
     def __repr__(self):
