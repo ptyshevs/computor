@@ -429,8 +429,14 @@ def resolve(expr, env):
     # print("RESOLVING:", expr)
     if expr[-1] == '=':
         # print("Simple function/variable resolution")
-        to_eval = ' '.join((str(_).replace('\n', ';') for _ in expr[:-1]))
-        print("TO EVAL:", to_eval)
+        if type(expr[0]) is ct.Function:
+            f = expr[0]
+            arg = f.arg_name
+            for _ in env:
+                if _ == str(arg):
+                    return f.apply(_)
+            return f.body
+        to_eval = ' '.join((str(_) for _ in expr[:-1]))
         return evaluate(to_eval, env)
     inp = [expr[0].body.replace(' ', '')]
 

@@ -3,14 +3,15 @@ from Term import *
 from Operator import *
 from Variable import *
 import computorv2
-from pyMatrix import pyMatrix
 
 class Complex(Term):
     def __init__(self, re, img=0):
         self.re = re
         self.img = img
-        if type(img) is int:
+        if type(img) in [int, float]:
             self.img = Rational(img)
+        if type(re) in [int, float]:
+            self.re = Rational(re)
     
     def __repr__(self):
         s = str(self.re)
@@ -30,7 +31,7 @@ class Complex(Term):
         elif type(o) is Rational:
             return Complex(self.re + o, self.img)
         else:
-            raise NotImplementedError(f'Add {self} ({type(self)}) to {o} ({type(o)})')
+            raise NotImplementedError(f'{self} + {o} is not implemented')
     
     def __sub__(self, o):
         if type(o) is Rational:
@@ -38,7 +39,7 @@ class Complex(Term):
         elif type(o) is Complex:
             return Complex(self.re - o.re, self.img - o.img)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} - {o} is not implemented')
     
     def __mul__(self, o):
         if type(o) is Rational:
@@ -46,7 +47,19 @@ class Complex(Term):
         if type(o) is Complex:
             return Complex(self.re * o.re - self.img * o.img, self.re * o.img + self.img * o.re)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} * {o} is not implemented')
+    
+    def __pow__(self, o):
+        if type(o) is Rational:
+            r = Complex(1)
+            if o.q != 1:
+                raise ValueError(f"{self} ^ non-integer {o}")
+            for i in range(o.p):
+                r = r * self
+            return r
+        else:
+            raise NotImplementedError(f'{self} ^ {o} is not implemented')
+
 
     def __truediv__(self, o):
         # print("Division starts here")
@@ -149,6 +162,8 @@ class Rational(Term):
                 return Rational(self.p + o.p, self.q)
         elif type(o) is Complex:
             return Complex(self) + o
+        elif type(o) is Matrix:
+            return o + self
         else:
             raise NotImplementedError(f"{self} + {o} is not implemented")
 
@@ -179,8 +194,6 @@ class Rational(Term):
     def __truediv__(self, o):
         if type(o) is Rational:
             return self * Rational(o.q, o.p)
-        elif type(o) is Matrix:
-            return o / self
         else:
             raise NotImplementedError(f'{self} * {o} is not implemented')
 
@@ -224,15 +237,19 @@ class Matrix(Term):
         if type(o) is Matrix:
             self._validate_shape(o, 'add')
             return Matrix([[cl + cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        elif type(o) in [Rational, Complex]:
+            return Matrix([[c + o for c in r] for r in self.v])
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} + {o} is not implemented')
     
     def __sub__(self, o):
         if type(o) is Matrix:
             self._validate_shape(o, 'sub')
             return Matrix([[cl - cr for cl, cr in zip(rl, rr)] for rl, rr in zip(self.v, o.v)])
+        elif type(o) in [Rational, Complex]:
+            return Matrix([[c - o for c in r] for r in self.v])
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} - {o} is not implemented')
     
     def __mul__(self, o):
         if type(o) is Matrix:
@@ -241,7 +258,7 @@ class Matrix(Term):
         elif type(o) in [Rational, Complex]:
             return Matrix([[c * o for c in r] for r in self.v])
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} * {o} is not implemented')
     
     def __truediv__(self, o):
         if type(o) is Matrix:
@@ -250,7 +267,7 @@ class Matrix(Term):
         elif type(o) in [Rational, Complex]:
             return Matrix([[c / o for c in r] for r in self.v])
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'{self} / {o} is not implemented')
     
     def __neg__(self):
         return Matrix([[-c for c in r] for r in self.v])
@@ -270,7 +287,7 @@ class Matrix(Term):
     
     def __matmul__(self, o):
         if type(o) is not Matrix:
-            raise NotImplementedError(f"Cannot matrix-multiply {self} with {o}")
+            raise NotImplementedError(f'{self} ** {o} is not implemented')
         
         if self.shape[1] != o.shape[0]:
             raise IndexError(f"Dimensions must match: {self.shape} and {o.shape}")
