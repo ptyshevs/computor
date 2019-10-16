@@ -7,4 +7,4 @@ def test1():
     assert str(evaluate('(-6-3i)/(4+6i)')) == '-21/26+6/13i'
 
 def test2():
-    assert str(evaluate('[(2-1i)/(-3+6i)]')) == '[-4/15-1/5i]'
+    assert str(evaluate('[(2-1i)/(-3+6i)]')) == '[[-4/15-1/5i]]'
