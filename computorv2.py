@@ -100,7 +100,7 @@ def parse_matrix(tk, env=None, return_matrix=True):
                 if row_len is None:
                     row_len = len(res)
                 elif len(res) != row_len:
-                    raise ValueError(f'Attempted to create ct.Matrix of different column length: {len(res)} != {row_len}')
+                    raise ValueError(f'Attempted to create matrix of different column length: {len(res)} != {row_len}')
                 matrix_rows.append(res)
             print("ct.Matrix rows:", matrix_rows)
             return ct.Matrix(matrix_rows)
@@ -151,11 +151,8 @@ def match_token(token, env=None):
         else:
             var = ct.Variable(name)
             for t in env:
-                print(t, t.name)
                 if var.name == t.name:
-                    print(f"Returned {t.name} from the environment")
                     return t
-            print(f'Returned {var} as a variable, env:', env)
             return var
     # 4. ct.Matrix
     mo = re.fullmatch(matrix_re, token)
@@ -244,8 +241,12 @@ def evaluate_rpn(rpn, env):
             found = False
             for t in env:
                 if val == t:
-                    val = t
-                    found = True
+                    if type(t) is ct.Function:
+                        env.remove(t)
+                        found = False
+                    if type(t) is ct.Variable:
+                        val = t
+                        found = True
                     break
             if not found and val.v is not None:
                 env.append(val)
@@ -254,7 +255,7 @@ def evaluate_rpn(rpn, env):
         elif type(val) is ct.Operator:
             n_op = val.n_operands
             if not eval_stack:
-                raise ValueError(f"Not enough operands to perform calculation | ct.Operator {val}")
+                raise ValueError(f"Not enough operands to perform calculation | ct.Operator {val} ({type(val)})")
             op = eval_stack.pop()
             if n_op == 1:
                 eval_stack.append(val.eval(op))
@@ -373,6 +374,10 @@ def tokens_to_expr(tokens, env):
 
 
 def combine_functions(tokens, env):
+    n = len(tokens)
+    for i in range(n):
+        if type(tokens[i]) is ct.Function and i + 1 < n and tokens[i + 1] != '(':
+            tokens[i] = ct.Variable(tokens[i].name)
     if len(tokens) < 6:
         return tokens
     if ct.Operator('=') not in tokens:
@@ -384,32 +389,31 @@ def combine_functions(tokens, env):
         return tokens
     if lp != '(' or rp != ')' or assign != ct.Operator('='):
         return tokens
-
+    if str(func_name) == str(var):
+        raise ValueError("Function name and argument should not be the same")
     body = []
-    sub_body = []
     for _ in expr:
         if type(_) in [ct.Variable, ct.Function]:
             if _.name == str(func_name):
                 raise ValueError("Recursion is prohibited. Nice try")
             else:
                 body.append(_.name)
-                if _.name == var:
-                    sub_body.append(f'%_{_.name}_%')
-                else:
-                    sub_body.append(_.name)
         else:
             body.append(str(_))
-            sub_body.append(str(_))
     
     func_body = ' '.join(body)
+    if 'name' in dir(func_name):
+        func_name = func_name.name
     f = ct.Function(str(func_name), str(var), func_body, env)
-    print("ct.Function BODY:", f.body)
-    print("ct.Function SUB_BODY:", f.sub_body)
-    if func_name not in env:
-        env.append(f)
-    else:
-        env.pop(env.index(func_name))
-        env.append(f)
+    
+    print(f"Func_name: {func_name} ({type(func_name)})")
+    for i in range(len(env)):
+        if str(env[i]) == func_name or (type(env[i]) in [ct.Function, ct.Variable] and env[i].name == func_name):
+            env.remove(env[i])
+            break
+    
+    env.append(f)
+
     return [f]
 
 def evaluate(inp, env=None, return_rpn=False):
@@ -452,9 +456,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     env = []
-    #ct.Function('sin', 'x', lambda x: sin(x)), ct.Function('cos', 'x', lambda x: cos(x)),
-    #                     ct.Function('tan', 'x', lambda x: tan(x)), ct.Function('tanh', 'x', lambda x: tanh(x))
-    default_functions = []
+
+    default_functions = [ct.Function('sin', 'x', 'sin(x)', env, f=lambda x: sin(x)), ct.Function('cos', 'x', 'cos(x)', env, f=lambda x: cos(x)),
+                        ct.Function('tan', 'x', 'tan(x)', env, f=lambda x: tan(x)), ct.Function('tanh', 'x', 'tanh(x)', env, f=lambda x: tanh(x))]
     env.extend(default_functions)
     history = []
     running = True

@@ -270,6 +270,11 @@ class Function(Term):
     def apply(self, o):
         if type(o) is Variable:
             o = o.dereference()
+        if self.f is not None:
+            if type(o) is Rational:
+                return Rational(self.f(o.v))
+            else:
+                raise NotImplementedError(f"{self.name}({self.arg_name}) is not implemented for {o}")
         res = computorv2.evaluate(' '.join((c if c != self.arg_name else str(o) for c in self.body)), self.env)
         print(f"applying {self.name}({self.arg_name}) on {o}: {res}")
         return res
