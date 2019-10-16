@@ -426,7 +426,7 @@ def combine_functions(tokens, env):
     return [f]
 
 def resolve(expr, env):
-    # print("RESOLVING:", expr)
+    print("RESOLVING:", expr)
     if expr[-1] == '=':
         # print("Simple function/variable resolution")
         if type(expr[0]) is ct.Function:
@@ -435,7 +435,8 @@ def resolve(expr, env):
             for _ in env:
                 if _ == str(arg):
                     return f.apply(_)
-            return f.body
+            if type(expr[2]) is ct.Variable:
+                return f.body
         to_eval = ' '.join((str(_) for _ in expr[:-1]))
         return evaluate(to_eval, env)
     inp = [expr[0].body.replace(' ', '')]
