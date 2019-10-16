@@ -426,7 +426,6 @@ def combine_functions(tokens, env):
     return [f]
 
 def resolve(expr, env):
-    print("RESOLVING:", expr)
     if expr[-1] == '=':
         # print("Simple function/variable resolution")
         if type(expr[0]) is ct.Function:
@@ -523,6 +522,8 @@ if __name__ == '__main__':
 
         try:
             result = evaluate(inp, env, verbose=args.verbose)
-            print(result)
         except Exception as e:
-            print(e)
+            result = e
+
+        print(result)
+        history.append((inp, result))
