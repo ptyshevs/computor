@@ -3,6 +3,7 @@ from Term import *
 from Operator import *
 from Variable import *
 import computorv2
+from pyMatrix import pyMatrix
 
 class Complex(Term):
     def __init__(self, re, img=0):
@@ -48,7 +49,7 @@ class Complex(Term):
             raise NotImplementedError()
 
     def __truediv__(self, o):
-        print("Division starts here")
+        # print("Division starts here")
         if type(o) is Rational:
             o = Complex(o)
         if type(o) is Complex:
@@ -170,13 +171,19 @@ class Rational(Term):
             return Rational(self.p * o.p, self.q * o.q)
         elif type(o) is Complex:
             return Complex(self) * o
+        elif type(o) is Matrix:
+            return o * self
         else:
             raise NotImplementedError(f'{self} * {o} is not implemented')
     
     def __truediv__(self, o):
-        if type(o) is not Rational:
-            raise NotImplementedError(f'{self} / {o} is not implemented')
-        return self * Rational(o.q, o.p)
+        if type(o) is Rational:
+            return self * Rational(o.q, o.p)
+        elif type(o) is Matrix:
+            return o / self
+        else:
+            raise NotImplementedError(f'{self} * {o} is not implemented')
+
     
     def __pow__(self, o):
         if type(o) is not Rational:
@@ -257,6 +264,97 @@ class Matrix(Term):
     def _validate_shape(self, o, op):
         if self.shape != o.shape:
             raise ValueError(f"Dimensions mismatch ({op}): {self.shape} != {o.shape}")
+    
+    def __str__(self):
+        return '[' + ';'.join((str(_) for _ in self.v)) + ']'
+    
+    def __matmul__(self, o):
+        if type(o) is not Matrix:
+            raise NotImplementedError(f"Cannot matrix-multiply {self} with {o}")
+        
+        if self.shape[1] != o.shape[0]:
+            raise IndexError(f"Dimensions must match: {self.shape} and {o.shape}")
+        r = Matrix([[Rational(0) for _ in range(o.shape[1])] for _ in range(self.shape[0])])
+        for i, row in enumerate(self.v):
+            for j, col in enumerate(o.T.v):
+                for rc, cc in zip(row, col):
+                    r[i, j] += rc * cc
+        return r
+    
+    @property
+    def T(self):
+        """
+        Matrix transpose: interchange rows and columns
+        :return: transposed Matrix
+        """
+        return Matrix([[self[i, j] for i in range(self.shape[0])] for j in range(self.shape[1])])
+
+    def __getitem__(self, item):
+        """
+        A[key] -- access by indexing
+        :param item:
+        :return:
+        """
+        if type(item) is int:
+            #  select row by default
+            if self.shape[0] == 1:  # iterate by column if it's a row vector
+                return self.v[0][item]
+            elif self.shape[1] == 1:  # iterate by row if it's a column vector
+                return self.v[item][0]
+            return Matrix([self.v[item]])
+        elif type(item) is list:
+            return Matrix([self.v[i] for i in item])
+        elif type(item) is tuple and len(item) == 2 and type(item[0]) is int and type(item[1]) is int:
+            r, c = item
+            return self.v[r][c]
+        elif type(item) is slice:
+            return Matrix(self.v[item])
+        else:
+            for i in item:
+                if type(i) not in (int, slice):
+                    raise ValueError(f"Bad index type {type(i)}")
+            if len(item) != 2:
+                raise ValueError(f"Don't understand index: {item}")
+            if self.shape == (0, 0):
+                return Matrix([[]])
+            row_slice, col_slice = item
+            rows = self.v[row_slice]  # M[0, :] to work
+            if type(rows[0]) is not list:
+                rows = [rows]
+            subset = [row[col_slice] for row in rows]
+            if type(subset) in (int, float, complex):
+                return Matrix([[subset]])
+            elif type(subset) in (list, tuple) and type(subset[0]) in (int, float, complex):
+                return Matrix([subset])
+            else:
+                return Matrix(subset)
+
+    def __setitem__(self, key, value):
+        """
+        A[key] = value
+        :param key:
+        :param value:
+        :return:
+        """
+        if type(key) is int:
+            row = key
+            col = slice(None, None, None)
+        else:
+            row, col = key
+        if type(row) is int:
+            row_it = range(row, row + 1)
+        else:
+            row_it = range(*row.indices(len(self.v)))
+        for r in row_it:
+            if type(col) is int and hasattr(value, 'shape') and r < value.shape[1]:  # assigning v from Matrix-like object
+                self.v[r][col] = value[r]
+            elif type(col) is int and hasattr(value, 'shape') and value.shape == (1, 1):
+                self.v[r][col] = value[0, 0]
+            elif type(col) is int:
+                self.v[r][col] = value
+            else:
+                for c in range(*col.indices(len(self.v[0]))):
+                    self.v[r][c] = value[c]
 
 class Function(Term):
     def __init__(self, name, arg_name, body, env, f=None):
@@ -276,7 +374,7 @@ class Function(Term):
             else:
                 raise NotImplementedError(f"{self.name}({self.arg_name}) is not implemented for {o}")
         res = computorv2.evaluate(' '.join((c if c != self.arg_name else str(o) for c in self.body)), self.env)
-        print(f"applying {self.name}({self.arg_name}) on {o}: {res}")
+        # print(f"applying {self.name}({self.arg_name}) on {o}: {res}")
         return res
     
     def __repr__(self):

@@ -53,11 +53,11 @@ class Operator(Term):
         elif self.op == '~':  # TODO: Maybe implement this one
             return -l
         elif self.op == '=':
-            print("Assignment:", l, r)
+            # print("Assignment:", l, r)
             if type(r) is Variable:
                 r.v = l
             else:
-                raise NotImplementedError()
+                raise NotImplementedError(f"Cannot assign {l} to {r}")
             return r
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f"Don't know what to do with {self.op}")

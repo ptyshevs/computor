@@ -166,9 +166,9 @@ def check_tokens(tokens, regex):
         res = re.findall(regex, tk)
         if len(res) == 0:
             raise ValueError(f"Invalid token {tk} | {res}")
-        print(res)
+        # print(res)
         v = ''.join([''.join(_[0] if _[0] else _[4:]) for _ in res])
-        print(v)
+        # print(v)
         if v != tk:
             raise ValueError(f"Invalid token: {tk} != {v}")
 
@@ -209,13 +209,13 @@ if __name__ == '__main__':
     reg = r'(([[0-9]*\.?[0-9]*)\*?([a-zA-Z])\^?([0-9]*))|([0-9]+\.?[0-9]*)|([-=*+])'
 
     inp = args.equation
-    print("input:", inp)
+    # print("input:", inp)
     tokens = [c.lower() for c in inp.split(" ") if c]
     check_tokens(tokens, reg)
     reformat = ''.join(tokens)
-    print("correct format:", reformat)
+    # print("correct format:", reformat)
     matched_terms = re.findall(reg, reformat)
-    print("Matches:", matched_terms)
+    # print("Matches:", matched_terms)
     eq = []
     for match in matched_terms:
         term = interpret_match(match)

@@ -2,6 +2,7 @@ import argparse
 import re
 import computor_types as ct
 from math import sin, cos, tan, tanh
+import os
 
 def str_to_num(s):
     try:
@@ -24,7 +25,7 @@ def squeeze(mat_row):
         elif t == ']':
             cnt_open -= 1
         i += 1
-    print(f"Squeeze attempt: i={i} | cnt_open={cnt_open} | n={n}")
+    # print(f"Squeeze attempt: i={i} | cnt_open={cnt_open} | n={n}")
     if cnt_open == 0 and i == n:
         return mat_row[1:-1]
     else:
@@ -87,10 +88,9 @@ def parse_matrix(tk, env=None, return_matrix=True):
                 valid = False
                 break
         if not valid:
-            print("Invalid ct.Matrix format")
-            return None
+            raise ValueError("Invalid ct.Matrix format")
         else:
-            print("Valid multi-row ct.Matrix")
+            # print("Valid multi-row ct.Matrix")
             matrix_rows = []
             row_len = None
             for r in rows:
@@ -102,7 +102,7 @@ def parse_matrix(tk, env=None, return_matrix=True):
                 elif len(res) != row_len:
                     raise ValueError(f'Attempted to create matrix of different column length: {len(res)} != {row_len}')
                 matrix_rows.append(res)
-            print("ct.Matrix rows:", matrix_rows)
+            # print("ct.Matrix rows:", matrix_rows)
             return ct.Matrix(matrix_rows)
         
 
@@ -146,7 +146,7 @@ def match_token(token, env=None):
     if mo:
         name = mo[0]
         if name.lower() == 'i':
-            print("ct.Variable cannot be called i (for obvious reasons)")
+            # print("ct.Variable cannot be called i (for obvious reasons)")
             return None
         else:
             var = ct.Variable(name)
@@ -159,8 +159,8 @@ def match_token(token, env=None):
     if mo:
         mat_repr = mo[0]
         mat = parse_matrix(mat_repr, env)
-        print("ct.Matrix REPR:", mat_repr)
-        print("ct.Matrix:", mat)
+        # print("ct.Matrix REPR:", mat_repr)
+        # print("ct.Matrix:", mat)
         if mat:
             return mat
 
@@ -185,14 +185,14 @@ def show_env(env):
 def infix_to_rpn(expr):
     operators = []  # Stack
     output = []  # Queue
-    print("INFIX TO RPN")
+    # print("INFIX TO RPN")
     while expr:
         tk = expr.pop(0)
-        print(f'tk={tk}, type={type(tk)}')
+        # print(f'tk={tk}, type={type(tk)}')
         if type(tk) in [ct.Rational, ct.Complex, ct.Variable, ct.Matrix]:
             output.append(tk)
         elif type(tk) is ct.Function:
-            print(f"Added {tk} as a func")
+            # print(f"Added {tk} as a func")
             operators.append(tk)
         elif type(tk) is ct.Operator:
             while True:
@@ -279,7 +279,7 @@ def evaluate_rpn(rpn, env):
                     else:
                         if type(op) is ct.Variable:
                             op = op.dereference()
-                        if op2 not in env:
+                        if op2 not in env and type(op2) in [ct.Variable, ct.Function]:
                             env.append(op2)
                     eval_stack.append(val.eval(op, op2))
         elif type(val) is ct.Function:
@@ -311,10 +311,15 @@ def expand_tokens(tokens):
     i = 0
     while i < n:
         t = expanded[i]
+        if expanded[i] == '*' and i < n - 1 and expanded[i + 1] == '*':
+            exp.append("**")
+            i += 2
+            continue
         if accum is None:
             accum = t
         else:
             accum += t
+            
         if t == '[':
             # print("Start collecting ct.Matrix")
             n_open = 1
@@ -382,15 +387,19 @@ def combine_functions(tokens, env):
         return tokens
     if ct.Operator('=') not in tokens:
         return tokens
-    print("Start working on ct.Function")
+    # print("Start working on ct.Function,")
     func_name, lp, var, rp, assign, *expr = tokens
-    print("EXPR:", expr)
+    # print("EXPR:", expr)
     if type(func_name) not in [ct.Function, ct.Variable]:
         return tokens
     if lp != '(' or rp != ')' or assign != ct.Operator('='):
         return tokens
     if str(func_name) == str(var):
         raise ValueError("Function name and argument should not be the same")
+    # print("Tokens:", tokens)
+    if tokens[-1] == ct.Operator('?'):
+        # print("resolve shortcut")
+        return tokens
     body = []
     for _ in expr:
         if type(_) in [ct.Variable, ct.Function]:
@@ -406,7 +415,7 @@ def combine_functions(tokens, env):
         func_name = func_name.name
     f = ct.Function(str(func_name), str(var), func_body, env)
     
-    print(f"Func_name: {func_name} ({type(func_name)})")
+    # print(f"Func_name: {func_name} ({type(func_name)})")
     for i in range(len(env)):
         if str(env[i]) == func_name or (type(env[i]) in [ct.Function, ct.Variable] and env[i].name == func_name):
             env.remove(env[i])
@@ -416,7 +425,34 @@ def combine_functions(tokens, env):
 
     return [f]
 
-def evaluate(inp, env=None, return_rpn=False):
+def resolve(expr, env):
+    # print("RESOLVING:", expr)
+    if expr[-1] == '=':
+        # print("Simple function/variable resolution")
+        to_eval = ' '.join((str(_).replace('\n', ';') for _ in expr[:-1]))
+        print("TO EVAL:", to_eval)
+        return evaluate(to_eval, env)
+    inp = [expr[0].body.replace(' ', '')]
+
+    for i in range(len(expr)):
+        t = expr[i]
+        if t == ct.Operator('='):
+            inp = inp + expr[i:]
+            break
+    
+    v1_input = []
+    for _ in inp:
+        if type(_) is ct.Variable and _.v:
+            v1_input.append(str(_.v))
+        elif type(_) is ct.Function:
+            v1_input.append(_.body)
+        else:
+            v1_input.append(str(_))
+    v1_input = ''.join(v1_input)
+    # print("v1_input:", v1_input)
+    return os.system(f'python3 computor.py "{v1_input}"')
+
+def evaluate(inp, env=None, verbose=False):
     """ 
     Evaluation pipeline
     """
@@ -425,23 +461,26 @@ def evaluate(inp, env=None, return_rpn=False):
     result = None
     # Remove all spaces
     tokens = ''.join([c for c in inp.split(" ") if c])
-    print("Tokens:", tokens)
+    if verbose:
+        print("Tokens:", tokens)
     # Convert tokens to expression. One token can actually contain many statements that need to be separated: "-x^2+3x"
     exp_tokens = expand_tokens(tokens)
-    print("Expanded tokens:", exp_tokens)
+    if verbose:
+        print("Expanded tokens:", exp_tokens)
 
     expr = tokens_to_expr(exp_tokens, env)
     expr = combine_functions(expr, env)
     if not expr:
         return None
-
-    print("Expression:", [(c, type(c)) for c in expr])
+    if verbose:
+        print("Expression:", [(c, type(c)) for c in expr])
+    if expr[-1] == ct.Operator('?'):
+        return resolve(expr[:-1], env)
     # At this point all tokens are interpreted and expanded, so we can
     # proceed with preparing it into form that is suitable for calculation
     rpn = infix_to_rpn(expr)
-    print("RPN:", rpn)
-    if return_rpn:
-        return rpn
+    if verbose:
+        print("RPN:", rpn)
     try:
         result = evaluate_rpn(rpn, env)
         # print("Result:", result)
@@ -451,7 +490,7 @@ def evaluate(inp, env=None, return_rpn=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--quiet', '-q', help="Quite mode: display output only when asked for", default=False, action='store_true')
+    parser.add_argument('--verbose', '-v', help="Verbose mode", default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -476,7 +515,7 @@ if __name__ == '__main__':
             continue
 
         try:
-            result = evaluate(inp, env)
+            result = evaluate(inp, env, verbose=args.verbose)
             print(result)
         except Exception as e:
             print(e)
